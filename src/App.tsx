@@ -6,6 +6,7 @@ import { Step1LoanParameters } from './components/Step1LoanParameters';
 import { Step2ApplicantDetails } from './components/Step2ApplicantDetails';
 import { Step3FinancialReview } from './components/Step3FinancialReview';
 import { SuccessScreen } from './components/SuccessScreen';
+import { VerificationScreen } from './components/VerificationScreen';
 import { AdminPage } from './components/AdminPage';
 import { AppStep, LoanFormData, SubmittedApplication } from './types';
 import { calculateMonthlyPayment } from './utils/calculator';
@@ -197,6 +198,14 @@ export default function App() {
                 <SuccessScreen
                   application={submittedApplication}
                   onNewApplication={handleReset}
+                  onContinue={() => setCurrentStep('verification')}
+                />
+              )}
+
+              {currentStep === 'verification' && (
+                <VerificationScreen
+                  phone={formData.phone}
+                  onBack={() => setCurrentStep('success')}
                 />
               )}
             </motion.div>

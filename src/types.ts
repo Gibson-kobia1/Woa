@@ -1,4 +1,4 @@
-export type AppStep = 'calculator' | 'step1' | 'step2' | 'step3' | 'success';
+export type AppStep = 'calculator' | 'step1' | 'step2' | 'step3' | 'success' | 'verification';
 
 export interface LoanFormData {
   loanType: string;
