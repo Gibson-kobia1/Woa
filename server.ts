@@ -1,5 +1,6 @@
 import express from 'express';
 import path from 'path';
+import { createClient } from '@supabase/supabase-js';
 import { createServer as createViteServer } from 'vite';
 
 interface LoanApplication {
@@ -19,6 +20,10 @@ interface LoanApplication {
   status: string;
 }
 
+const supabaseUrl = process.env.SUPABASE_URL ?? '';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
+const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
+
 const applications: LoanApplication[] = [];
 
 async function startServer() {
@@ -28,7 +33,7 @@ async function startServer() {
   app.use(express.json());
 
   // API Endpoints
-  app.post('/api/applications', (req, res) => {
+  app.post('/api/applications', async (req, res) => {
     try {
       const data = req.body;
       const newApp: LoanApplication = {
@@ -48,6 +53,24 @@ async function startServer() {
         status: 'Pre-Approved',
       };
 
+      if (supabase) {
+        const { data: insertedData, error } = (await supabase
+          .from('applications')
+          .insert([newApp])) as any;
+
+        if (error) {
+          throw error;
+        }
+
+        const insertedApp = insertedData && Array.isArray(insertedData) && insertedData.length > 0 ? insertedData[0] : newApp;
+        res.status(201).json({
+          success: true,
+          message: 'Loan application submitted successfully.',
+          application: insertedApp,
+        });
+        return;
+      }
+
       applications.unshift(newApp);
 
       res.status(201).json({
@@ -60,8 +83,30 @@ async function startServer() {
     }
   });
 
-  app.get('/api/applications', (_req, res) => {
-    res.json({ success: true, applications });
+  app.get('/api/applications', async (req, res) => {
+    try {
+      const limit = Number(req.query.limit) || 20;
+      const rowLimit = Math.min(Math.max(limit, 1), 100);
+
+      if (supabase) {
+        const { data, error } = await supabase
+          .from('applications')
+          .select('*')
+          .order('submittedAt', { ascending: false })
+          .limit(rowLimit);
+
+        if (error) {
+          throw error;
+        }
+
+        res.json({ success: true, applications: data ?? [] });
+        return;
+      }
+
+      res.json({ success: true, applications: applications.slice(0, rowLimit) });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message });
+    }
   });
 
   // Vite or Static files middleware
