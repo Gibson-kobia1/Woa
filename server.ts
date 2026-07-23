@@ -1,4 +1,5 @@
 import express from 'express';
+import fs from 'fs';
 import path from 'path';
 import { createClient } from '@supabase/supabase-js';
 import { createServer as createViteServer } from 'vite';
@@ -89,18 +90,22 @@ async function startServer() {
       const rowLimit = Math.min(Math.max(limit, 1), 100);
 
       if (supabase) {
-        const { data, error } = await supabase
-          .from('applications')
-          .select('*')
-          .order('submittedAt', { ascending: false })
-          .limit(rowLimit);
+        try {
+          const { data, error } = await supabase
+            .from('applications')
+            .select('*')
+            .order('submittedAt', { ascending: false })
+            .limit(rowLimit);
 
-        if (error) {
-          throw error;
+          if (error) {
+            throw error;
+          }
+
+          res.json({ success: true, applications: data ?? [] });
+          return;
+        } catch (supabaseError: any) {
+          console.error('Supabase fetch failed:', supabaseError?.message || supabaseError);
         }
-
-        res.json({ success: true, applications: data ?? [] });
-        return;
       }
 
       res.json({ success: true, applications: applications.slice(0, rowLimit) });
@@ -116,6 +121,15 @@ async function startServer() {
       appType: 'spa',
     });
     app.use(vite.middlewares);
+
+    // SPA fallback for dev mode - serves index.html for non-API routes
+    const indexHtml = fs.readFileSync(path.resolve('index.html'), 'utf-8');
+    app.use((req, res) => {
+      if (req.path.startsWith('/api')) {
+        return res.status(404).json({ error: 'API route not found' });
+      }
+      res.status(200).set({ 'Content-Type': 'text/html' }).send(indexHtml);
+    });
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
