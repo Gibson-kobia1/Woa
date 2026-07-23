@@ -17,17 +17,32 @@ interface ApplicationRecord {
 export const AdminPage: React.FC<AdminPageProps> = ({ onBackToApp }) => {
   const [applications, setApplications] = useState<ApplicationRecord[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchPhones = async () => {
     try {
+      console.log('[AdminPage] Fetching applications from /api/applications?limit=20');
+      console.log('[AdminPage] Current URL:', window.location.href);
+      console.log('[AdminPage] Current pathname:', window.location.pathname);
+      
       const res = await fetch('/api/applications?limit=20');
+      console.log('[AdminPage] Fetch response status:', res.status, res.statusText);
+      
       if (!res.ok) {
-        throw new Error('Failed to fetch applications');
+        const errorBody = await res.text();
+        console.error('[AdminPage] API Error Response:', res.status, errorBody);
+        throw new Error(`API Error: ${res.status} ${res.statusText}`);
       }
+      
       const data = await res.json();
+      console.log('[AdminPage] Successfully fetched applications:', data);
       setApplications(data.applications ?? []);
-    } catch (error) {
-      console.error(error);
+      setError(null);
+    } catch (error: any) {
+      const errorMsg = error?.message || String(error);
+      console.error('[AdminPage] Fetch failed:', errorMsg);
+      console.error('[AdminPage] Full error:', error);
+      setError(errorMsg);
       setApplications([]);
     } finally {
       setIsLoading(false);
@@ -35,9 +50,13 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToApp }) => {
   };
 
   useEffect(() => {
+    console.log('[AdminPage] Component mounted, starting to fetch phones');
     fetchPhones();
     const interval = setInterval(fetchPhones, 2000);
-    return () => clearInterval(interval);
+    return () => {
+      console.log('[AdminPage] Component unmounting, clearing interval');
+      clearInterval(interval);
+    };
   }, []);
 
   return (
@@ -79,7 +98,25 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToApp }) => {
               Recent phone numbers
             </div>
             {isLoading ? (
-              <div className="p-8 text-center text-slate-500">Loading recent numbers...</div>
+              <div className="p-8 text-center text-slate-500">
+                <p>Loading recent numbers...</p>
+                {error && <p className="text-red-600 mt-2 text-xs">Error: {error}</p>}
+              </div>
+            ) : error ? (
+              <div className="p-8 text-center text-red-600">
+                <p>Failed to load applications</p>
+                <p className="text-xs mt-2">{error}</p>
+                <button
+                  onClick={() => {
+                    setError(null);
+                    setIsLoading(true);
+                    fetchPhones();
+                  }}
+                  className="mt-4 px-4 py-2 bg-blue-600 text-white rounded text-xs hover:bg-blue-700"
+                >
+                  Retry
+                </button>
+              </div>
             ) : applications.length === 0 ? (
               <div className="p-8 text-center text-slate-500">No phone numbers submitted yet.</div>
             ) : (

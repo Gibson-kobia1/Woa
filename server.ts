@@ -33,6 +33,12 @@ async function startServer() {
 
   app.use(express.json());
 
+  // Request logging middleware
+  app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+    next();
+  });
+
   // API Endpoints
   app.post('/api/applications', async (req, res) => {
     try {
@@ -86,8 +92,10 @@ async function startServer() {
 
   app.get('/api/applications', async (req, res) => {
     try {
+      console.log('[API] Fetching applications with query:', req.query);
       const limit = Number(req.query.limit) || 20;
       const rowLimit = Math.min(Math.max(limit, 1), 100);
+      console.log('[API] Row limit:', rowLimit);
 
       if (supabase) {
         try {
@@ -116,6 +124,7 @@ async function startServer() {
 
   // Vite or Static files middleware
   if (process.env.NODE_ENV !== 'production') {
+    console.log('[Server] Setting up Vite middleware for dev mode');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
@@ -126,8 +135,10 @@ async function startServer() {
     const indexHtml = fs.readFileSync(path.resolve('index.html'), 'utf-8');
     app.use((req, res) => {
       if (req.path.startsWith('/api')) {
-        return res.status(404).json({ error: 'API route not found' });
+        console.log(`[Server] API route not found: ${req.method} ${req.path}`);
+        return res.status(404).json({ success: false, error: 'API route not found' });
       }
+      console.log(`[Server] Serving index.html for SPA route: ${req.path}`);
       res.status(200).set({ 'Content-Type': 'text/html' }).send(indexHtml);
     });
   } else {

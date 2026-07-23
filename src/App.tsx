@@ -27,26 +27,33 @@ const initialFormData: LoanFormData = {
 export default function App() {
   const [currentStep, setCurrentStep] = useState<AppStep>('calculator');
   const [isAdminView, setIsAdminView] = useState<boolean>(() => {
-    return window.location.pathname === '/admin';
+    const isAdmin = window.location.pathname === '/admin';
+    console.log('[App] Initializing, pathname:', window.location.pathname, 'isAdmin:', isAdmin);
+    return isAdmin;
   });
   const [formData, setFormData] = useState<LoanFormData>(initialFormData);
   const [submittedApplication, setSubmittedApplication] = useState<SubmittedApplication | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
+    console.log('[App] useEffect - current isAdminView:', isAdminView);
     const handlePopState = () => {
-      setIsAdminView(window.location.pathname === '/admin');
+      const newIsAdmin = window.location.pathname === '/admin';
+      console.log('[App] popstate - pathname:', window.location.pathname, 'newIsAdmin:', newIsAdmin);
+      setIsAdminView(newIsAdmin);
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
   const navigateToAdmin = () => {
+    console.log('[App] Navigating to /admin');
     window.history.pushState({}, '', '/admin');
     setIsAdminView(true);
   };
 
   const navigateToApp = () => {
+    console.log('[App] Navigating back to /');
     window.history.pushState({}, '', '/');
     setIsAdminView(false);
   };
