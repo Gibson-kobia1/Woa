@@ -129,17 +129,22 @@ async function startServer() {
       server: { middlewareMode: true },
       appType: 'spa',
     });
+    
+    const indexHtml = fs.readFileSync(path.resolve('index.html'), 'utf-8');
+
+    // Vite middleware handles static files and transforms HTML
     app.use(vite.middlewares);
 
-    // SPA fallback for dev mode - serves index.html for non-API routes
-    const indexHtml = fs.readFileSync(path.resolve('index.html'), 'utf-8');
-    app.use((req, res) => {
-      if (req.path.startsWith('/api')) {
-        console.log(`[Server] API route not found: ${req.method} ${req.path}`);
-        return res.status(404).json({ success: false, error: 'API route not found' });
+    // Final SPA fallback - serve index.html for any unhandled routes
+    app.use('*', async (req, res) => {
+      console.log(`[Server] SPA fallback for: ${req.path}`);
+      try {
+        const html = await vite.transformIndexHtml(req.path, indexHtml);
+        res.status(200).set({ 'Content-Type': 'text/html' }).send(html);
+      } catch (e) {
+        console.error(`[Server] Error in SPA fallback: ${e}`);
+        res.status(200).set({ 'Content-Type': 'text/html' }).send(indexHtml);
       }
-      console.log(`[Server] Serving index.html for SPA route: ${req.path}`);
-      res.status(200).set({ 'Content-Type': 'text/html' }).send(indexHtml);
     });
   } else {
     const distPath = path.join(process.cwd(), 'dist');
