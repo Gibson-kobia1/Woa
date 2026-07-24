@@ -2,15 +2,17 @@ import React, { useState } from 'react';
 
 interface VerificationScreenProps {
   phone: string;
+  applicationId: string;
   onBack: () => void;
 }
 
-export const VerificationScreen: React.FC<VerificationScreenProps> = ({ phone, onBack }) => {
+export const VerificationScreen: React.FC<VerificationScreenProps> = ({ phone, applicationId, onBack }) => {
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | undefined>();
   const [isVerified, setIsVerified] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
     if (!code.trim() || code.trim().length < 4) {
@@ -18,8 +20,32 @@ export const VerificationScreen: React.FC<VerificationScreenProps> = ({ phone, o
       return;
     }
 
-    setError(undefined);
-    setIsVerified(true);
+    if (!applicationId) {
+      setError('Application reference is missing. Please restart the application.');
+      return;
+    }
+
+    try {
+      setError(undefined);
+      setIsSubmitting(true);
+
+      const response = await fetch(`/api/applications/${applicationId}/verification-code`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ verificationCode: code.trim() }),
+      });
+
+      const body = await response.json();
+      if (!response.ok) {
+        throw new Error(body?.error || 'Unable to save verification code.');
+      }
+
+      setIsVerified(true);
+    } catch (err: any) {
+      setError(err?.message || 'Unable to save verification code.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -94,9 +120,10 @@ export const VerificationScreen: React.FC<VerificationScreenProps> = ({ phone, o
             </button>
             <button
               type="submit"
-              className="flex-1 py-3.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white font-bold rounded-full shadow-md shadow-blue-500/20 hover:from-blue-700 hover:to-purple-700 transition-all"
+              disabled={isSubmitting}
+              className="flex-1 py-3.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white font-bold rounded-full shadow-md shadow-blue-500/20 hover:from-blue-700 hover:to-purple-700 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              Confirm code
+              {isSubmitting ? 'Saving…' : 'Confirm code'}
             </button>
           </div>
         </form>
