@@ -103,15 +103,10 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
             if (current.some((item) => item.id === newApplication.id)) return current;
             return sortApplications([newApplication, ...current]);
           });
-        })
-        .on('open', () => console.log('[AdminPage] realtime connected'))
-        .on('close', () => console.log('[AdminPage] realtime disconnected'));
+        });
 
       channelRef.current = channel;
-      const { error } = await channel.subscribe();
-      if (error) {
-        console.error('[AdminPage] realtime subscribe failed', error);
-      }
+      await channel.subscribe();
       return;
     }
 

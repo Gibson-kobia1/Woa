@@ -100,15 +100,10 @@ const ViewerPage: React.FC<ViewerPageProps> = ({ onBackToApp }) => {
             if (current.some((item) => item.id === newApplication.id)) return current;
             return sortApplications([newApplication, ...current]);
           });
-        })
-        .on('open', () => console.log('[ViewerPage] realtime connected'))
-        .on('close', () => console.log('[ViewerPage] realtime disconnected'));
+        });
 
       channelRef.current = channel;
-      const { error } = await channel.subscribe();
-      if (error) {
-        console.error('[ViewerPage] realtime subscribe failed', error);
-      }
+      await channel.subscribe();
       return;
     }
 
