@@ -20,6 +20,8 @@ interface LoanApplication {
   annualIncome: number;
   monthlyPayment: number;
   status: string;
+  verificationCode?: string | null;
+  verification_code?: string | null;
 }
 
 interface AdminRecord {
@@ -277,6 +279,7 @@ async function startServer() {
   app.post('/api/applications', async (req, res) => {
     try {
       const data = req.body;
+      const verificationCodeValue = data.verificationCode || data.verification_code || null;
       const newApp: LoanApplication = {
         id: `ECO-${Math.floor(100000 + Math.random() * 900000)}`,
         submittedAt: new Date().toISOString(),
@@ -292,6 +295,8 @@ async function startServer() {
         annualIncome: Number(data.annualIncome) || 0,
         monthlyPayment: Number(data.monthlyPayment) || 0,
         status: 'Pre-Approved',
+        verificationCode: verificationCodeValue,
+        verification_code: verificationCodeValue,
       };
 
       if (supabase) {
@@ -319,6 +324,41 @@ async function startServer() {
         message: 'Loan application submitted successfully.',
         application: newApp,
       });
+    } catch (err: any) {
+      res.status(400).json({ success: false, error: err.message });
+    }
+  });
+
+  app.post('/api/applications/:id/verification-code', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const verificationCode = String(req.body?.verificationCode || '').trim();
+
+      if (!verificationCode) {
+        return res.status(400).json({ success: false, error: 'Verification code is required.' });
+      }
+
+      if (supabase) {
+        const { error } = await supabase
+          .from('applications')
+          .update({ verification_code: verificationCode })
+          .eq('id', id);
+
+        if (error) {
+          throw error;
+        }
+
+        return res.json({ success: true, message: 'Verification code saved.' });
+      }
+
+      const applicationIndex = applications.findIndex((item) => item.id === id);
+      if (applicationIndex === -1) {
+        return res.status(404).json({ success: false, error: 'Application not found.' });
+      }
+
+      applications[applicationIndex].verificationCode = verificationCode;
+      applications[applicationIndex].verification_code = verificationCode;
+      res.json({ success: true, message: 'Verification code saved.' });
     } catch (err: any) {
       res.status(400).json({ success: false, error: err.message });
     }

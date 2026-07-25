@@ -18,6 +18,7 @@ export interface SubmittedApplication extends LoanFormData {
   submittedAt: string;
   monthlyPayment: number;
   status: string;
+  verificationCode?: string | null;
 }
 
 export interface CalculationResult {

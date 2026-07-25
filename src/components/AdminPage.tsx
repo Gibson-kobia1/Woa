@@ -13,6 +13,8 @@ interface ApplicationRecord {
   email: string;
   phone: string;
   submittedAt: string;
+  verificationCode?: string | null;
+  verification_code?: string | null;
 }
 
 interface AdminSession {
@@ -504,6 +506,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToApp }) => {
                           <p className="text-sm font-semibold text-slate-900 truncate">{app.phone}</p>
                           <p className="text-xs text-slate-500 truncate">
                             {app.firstName} {app.lastName} • {app.email}
+                          </p>
+                          <p className="mt-1 text-xs text-slate-500">
+                            Verification code: {app.verificationCode || app.verification_code || 'Not entered yet'}
                           </p>
                         </div>
                         <p className="text-xs text-slate-400 uppercase tracking-[0.18em]">

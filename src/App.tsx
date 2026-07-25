@@ -106,6 +106,7 @@ export default function App() {
           monthlyPayment,
           status: 'Pre-Approved',
           annualIncome: Number(formData.annualIncome) || 0,
+          verificationCode: null,
         };
         setSubmittedApplication(fallbackApp);
       }
@@ -118,6 +119,7 @@ export default function App() {
         monthlyPayment,
         status: 'Pre-Approved',
         annualIncome: Number(formData.annualIncome) || 0,
+        verificationCode: null,
       };
       setSubmittedApplication(fallbackApp);
     } finally {
@@ -212,6 +214,7 @@ export default function App() {
               {currentStep === 'verification' && (
                 <VerificationScreen
                   phone={formData.phone}
+                  applicationId={submittedApplication?.id ?? ''}
                   onBack={() => setCurrentStep('success')}
                 />
               )}
