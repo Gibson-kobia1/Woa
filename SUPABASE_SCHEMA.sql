@@ -1,9 +1,6 @@
--- NOTE: This schema is inferred from application backend usage and table names.
--- Local Supabase dump was unavailable due to no running local database connection.
+-- NOTE: This schema is derived from the actual application backend usage.
+-- Supabase Auth is required for admin dashboard access.
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
-
--- Inferred Supabase schema based on application backend usage
--- Tables: applications, admins, admin_links, admin_link_usages, admin_change_logs
 
 CREATE TABLE IF NOT EXISTS applications (
   id text PRIMARY KEY,
@@ -62,7 +59,20 @@ CREATE TABLE IF NOT EXISTS admin_change_logs (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_applications_submitted_at ON applications (submitted_at DESC);
+-- Policies for applications realtime subscription from authenticated Supabase users.
+ALTER TABLE IF EXISTS applications ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY IF NOT EXISTS "authenticated_can_select_applications"
+  ON applications
+  FOR SELECT
+  USING (auth.role() = 'authenticated');
+
+CREATE POLICY IF NOT EXISTS "authenticated_can_insert_applications"
+  ON applications
+  FOR INSERT
+  WITH CHECK (auth.role() = 'authenticated');
+
+CREATE INDEX IF NOT EXISTS idx_applications_submitted_at ON applications (submittedAt DESC);
 CREATE INDEX IF NOT EXISTS idx_admin_links_admin_id ON admin_links (admin_id);
 CREATE INDEX IF NOT EXISTS idx_admin_links_token_hash ON admin_links (token_hash);
 CREATE INDEX IF NOT EXISTS idx_admin_link_usages_link_id ON admin_link_usages (link_id);
