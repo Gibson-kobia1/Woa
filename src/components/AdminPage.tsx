@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { supabase } from '../supabaseClient';
 
 type ApplicationRecord = {
@@ -52,12 +52,29 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
   const [isCreatingLink, setIsCreatingLink] = useState(false);
   const channelRef = useRef<any>(null);
 
-  const hardcodedCredentials = useMemo(() => ({ username: 'venomous', password: 'venomous99' }), []);
+  const getAuthHeaders = async () => {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (!supabase) {
+      return headers;
+    }
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        headers.Authorization = `Bearer ${session.access_token}`;
+      }
+    } catch {
+      // ignore
+    }
+
+    return headers;
+  };
 
   const fetchApplications = async () => {
     setIsLoadingApplications(true);
     try {
-      const res = await fetch('/api/applications?limit=100');
+      const headers = await getAuthHeaders();
+      const res = await fetch('/api/applications?limit=100', { headers });
       if (!res.ok) throw new Error('Unable to load applications');
       const body = await res.json();
       setApplications(sortApplications(body.applications ?? []));
@@ -72,7 +89,8 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
 
   const fetchLinks = async () => {
     try {
-      const res = await fetch('/api/admin-links');
+      const headers = await getAuthHeaders();
+      const res = await fetch('/api/admin-links', { headers });
       if (!res.ok) return;
       const body = await res.json();
       setLinks(body.links ?? []);
@@ -128,26 +146,68 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
 
   useEffect(() => {
     const restoreSession = async () => {
-      const storedSession = localStorage.getItem('admin_session');
-      if (storedSession !== 'true') return;
+      if (!supabase) {
+        setError('Supabase is not configured');
+        return;
+      }
 
       try {
-        const res = await fetch('/api/admin-session', { cache: 'no-store' });
-        if (!res.ok) {
-          localStorage.removeItem('admin_session');
+        const { data: { session }, error } = await supabase.auth.getSession();
+        console.log('[Auth] restoreSession', { session, error });
+        if (error) {
+          throw error;
+        }
+
+        if (!session) {
+          setIsLoggedIn(false);
           return;
         }
+
+        const { data: { user } } = await supabase.auth.getUser(session.access_token);
+        if (!user) {
+          throw new Error('Unable to restore Supabase session');
+        }
+
+        console.log('[Auth] session restored', {
+          userId: user.id,
+          email: user.email,
+          expiresAt: session.expires_at,
+        });
+
         setIsLoggedIn(true);
         await fetchApplications();
         await fetchLinks();
         await connectRealtime();
-      } catch {
-        // ignore
+      } catch (err: any) {
+        console.error('[Auth] session restore failed', err);
+        setIsLoggedIn(false);
       }
     };
 
+    const { data: authListener } = supabase
+      ? supabase.auth.onAuthStateChange((event, session) => {
+          console.log('[Auth] auth state change', { event, session });
+          if (session) {
+            console.log('[Auth] session active', {
+              sessionId: session.access_token ? 'present' : 'missing',
+              expiresAt: session.expires_at,
+            });
+            setIsLoggedIn(true);
+            void fetchApplications();
+            void fetchLinks();
+            void connectRealtime();
+            return;
+          }
+
+          console.log('[Auth] signed out or session expired', { event });
+          setIsLoggedIn(false);
+          setError(null);
+        })
+      : { data: null };
+
     void restoreSession();
     return () => {
+      authListener?.subscription?.unsubscribe?.();
       if (channelRef.current) {
         try {
           if (typeof channelRef.current.close === 'function') {
@@ -169,33 +229,39 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
     const normalizedUsername = username.trim();
     const normalizedPassword = password.trim();
 
-    const usernameMatches = normalizedUsername === hardcodedCredentials.username;
-    const passwordMatches = normalizedPassword === hardcodedCredentials.password;
+    if (!normalizedUsername || !normalizedPassword) {
+      setError('Email and password are required');
+      return;
+    }
 
-    if (!usernameMatches || !passwordMatches) {
-      setError('Invalid credentials');
+    if (!supabase) {
+      setError('Supabase is not configured');
       return;
     }
 
     try {
-      const res = await fetch('/api/admin-login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: normalizedUsername, password: normalizedPassword }),
+      console.log('[Auth] login attempt', { email: normalizedUsername });
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: normalizedUsername,
+        password: normalizedPassword,
       });
-      const body = await res.json().catch(() => ({}));
-      console.log('[Login] backend response status:', res.status, 'body:', body);
-      if (!res.ok) {
-        throw new Error(body?.error || 'Invalid credentials');
+      console.log('[Auth] signInWithPassword result', {
+        userId: data?.user?.id || null,
+        sessionId: data?.session?.access_token ? 'present' : null,
+        expiresAt: data?.session?.expires_at || null,
+        error: error?.message || null,
+      });
+
+      if (error || !data.session || !data.user) {
+        throw error || new Error('Unable to sign in');
       }
 
-      localStorage.setItem('admin_session', 'true');
       setIsLoggedIn(true);
       await fetchApplications();
       await fetchLinks();
       await connectRealtime();
     } catch (err: any) {
-      console.error('[Login] error', err);
+      console.error('[Auth] sign in failed', err);
       setError(err?.message || 'Unable to login');
     }
   };
@@ -205,6 +271,7 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
     setCreatedLink(null);
     try {
       const payload: Record<string, string | number> = {};
+      const headers = await getAuthHeaders();
       if (exactExpiry) {
         payload.expiresAt = exactExpiry;
       } else {
@@ -214,7 +281,7 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
       }
       const res = await fetch('/api/admin-links', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(payload),
       });
       const body = await res.json();
@@ -230,7 +297,8 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
 
   const revokeLink = async (id: string) => {
     try {
-      const res = await fetch(`/api/admin-links/${id}/revoke`, { method: 'POST' });
+      const headers = await getAuthHeaders();
+      const res = await fetch(`/api/admin-links/${id}/revoke`, { method: 'POST', headers });
       if (!res.ok) throw new Error('Unable to revoke link');
       await fetchLinks();
     } catch (err: any) {
@@ -238,10 +306,25 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
     }
   };
 
+  const handleBackToApp = async () => {
+    if (supabase) {
+      try {
+        const { error } = await supabase.auth.signOut();
+        console.log('[Auth] signOut result', { error });
+        if (error) {
+          throw error;
+        }
+      } catch (err: any) {
+        console.error('[Auth] signOut failed', err);
+      }
+    }
+    onBackToApp();
+  };
+
   if (!isLoggedIn) {
     return (
       <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <button type="button" onClick={onBackToApp} className="text-sm font-semibold text-slate-600 hover:text-slate-900">
+        <button type="button" onClick={handleBackToApp} className="text-sm font-semibold text-slate-600 hover:text-slate-900">
           ← Back to application
         </button>
         <h2 className="mt-4 text-2xl font-semibold text-slate-900">Admin Login</h2>

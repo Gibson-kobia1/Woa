@@ -77,100 +77,72 @@ const createSessionCookie = (adminId: string, linkId: string, expiresAt: string)
   return cookieParts.join('; ');
 };
 
-const HARDCODED_ADMIN_ID = 'hardcoded-admin';
-const HARDCODED_ADMIN_LINK_ID = 'hardcoded-admin-link';
-const HARDCODED_ADMIN = {
-  id: HARDCODED_ADMIN_ID,
-  email: 'venomous@example.com',
-  name: 'venomous',
-  is_active: true,
-  created_at: new Date().toISOString(),
-  created_by: null,
+const getBearerToken = (req: express.Request) => {
+  const authHeader = req.headers.authorization;
+  if (typeof authHeader !== 'string') return null;
+  const [scheme, token] = authHeader.split(' ');
+  if (scheme?.toLowerCase() !== 'bearer' || !token) return null;
+  return token;
 };
-const HARDCODED_ADMIN_USERNAME = 'venomous';
-const HARDCODED_ADMIN_PASSWORD = 'venomous99';
-const HARDCODED_ADMIN_SESSION_EXPIRATION_MINUTES = 60;
 
-const parseSessionCookie = (req: express.Request) => {
-  const cookieHeader = req.headers.cookie;
-  if (!cookieHeader) return null;
-  const cookies = cookieHeader.split(';').reduce<Record<string, string>>((acc, cookie) => {
-    const [key, ...rest] = cookie.split('=');
-    const value = rest.join('=');
-    if (key && value) acc[key.trim()] = value.trim();
-    return acc;
-  }, {});
-
-  const rawSession = cookies.admin_session;
-  if (!rawSession) return null;
-
-  const [encodedPayload, signature] = rawSession.split('.');
-  if (!encodedPayload || !signature) return null;
-
-  const payload = Buffer.from(encodedPayload, 'base64').toString('utf-8');
-  const expectedSignature = signPayload(payload);
-  if (expectedSignature !== signature) {
+const getAuthenticatedSupabaseUser = async (req: express.Request) => {
+  const accessToken = getBearerToken(req);
+  console.log('[Auth] verifying bearer token', { accessTokenPresent: Boolean(accessToken) });
+  if (!accessToken || !supabase) {
     return null;
   }
 
-  try {
-    const parsed = JSON.parse(payload);
-    if (!parsed.adminId || !parsed.linkId || !parsed.expiresAt) return null;
-    if (new Date(parsed.expiresAt).getTime() < Date.now()) return null;
-    return parsed as { adminId: string; linkId: string; expiresAt: string };
-  } catch {
+  const { data, error } = await supabase.auth.getUser(accessToken);
+  if (error || !data?.user?.email) {
+    console.error('[Auth] getUser failed', {
+      error: error?.message,
+      details: error,
+      stack: error?.stack,
+    });
     return null;
   }
+
+  console.log('[Auth] authenticated user', {
+    id: data.user.id,
+    email: data.user.email,
+    confirmed_at: data.user.confirmed_at,
+  });
+
+  return data.user;
+};
+
+const getAdminByEmail = async (email: string) => {
+  if (!supabase) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from('admins')
+    .select('id,email,name,is_active,created_at,created_by')
+    .eq('email', email)
+    .eq('is_active', true)
+    .single();
+
+  if (error || !data) {
+    console.error('[Auth] admin lookup failed', {
+      email,
+      error: error?.message,
+      details: error,
+      stack: error?.stack,
+    });
+    return null;
+  }
+
+  return data;
 };
 
 const getCurrentAdmin = async (req: express.Request) => {
-  const session = parseSessionCookie(req);
-  if (!session) return null;
-
-  if (session.adminId === HARDCODED_ADMIN_ID && session.linkId === HARDCODED_ADMIN_LINK_ID) {
-    return HARDCODED_ADMIN;
-  }
-
-  const now = new Date().toISOString();
-  if (supabase) {
-    const { data: linkData, error: linkError } = await supabase
-      .from('admin_links')
-      .select('admin_id,revoked,expires_at')
-      .eq('id', session.linkId)
-      .single();
-
-    if (linkError || !linkData || linkData.revoked || linkData.expires_at < now) {
-      return null;
-    }
-
-    if (linkData.admin_id !== session.adminId) {
-      return null;
-    }
-
-    const { data: adminData, error: adminError } = await supabase
-      .from('admins')
-      .select('id,email,name,is_active,created_at,created_by')
-      .eq('id', session.adminId)
-      .eq('is_active', true)
-      .single();
-
-    if (adminError || !adminData) {
-      return null;
-    }
-
-    return adminData;
-  }
-
-  const linkData = getLocalAdminLinkById(session.linkId);
-  if (!linkData || linkData.revoked || linkData.expires_at < now) {
+  const authUser = await getAuthenticatedSupabaseUser(req);
+  if (!authUser?.email) {
     return null;
   }
 
-  if (linkData.admin_id !== session.adminId) {
-    return null;
-  }
-
-  return getLocalAdminById(session.adminId) || null;
+  return getAdminByEmail(authUser.email);
 };
 
 const requireAdmin = async (req: express.Request, res: express.Response) => {
@@ -284,8 +256,6 @@ if (!supabase && process.env.NODE_ENV !== 'production') {
 }
 
 const getLocalAdminById = (id: string) => {
-  // Accept the hardcoded admin as a valid local admin when running without Supabase.
-  if (id === HARDCODED_ADMIN_ID) return HARDCODED_ADMIN;
   return localAdmins.find((admin) => admin.id === id && admin.is_active);
 };
 
@@ -471,6 +441,9 @@ async function startServer() {
 
   app.get('/api/applications', async (req, res) => {
     try {
+      const admin = await requireAdmin(req, res);
+      if (!admin) return;
+
       console.log('[API] Fetching applications with query:', req.query);
       const limit = Number(req.query.limit) || 20;
       const rowLimit = Math.min(Math.max(limit, 1), 100);
@@ -516,41 +489,71 @@ async function startServer() {
   app.post('/api/admin-login', async (req, res) => {
     const method = req.method;
     const url = req.originalUrl || req.url;
-    console.log('[AdminLogin] handler entered', { method, url });
+    console.log('[Auth] login attempt', {
+      method,
+      url,
+      email: req.body?.email || null,
+      contentType: req.headers['content-type'] || null,
+    });
+
     try {
-      const { username, password } = req.body ?? {};
-      const parsedUsername = typeof username === 'string' ? username : String(username ?? '');
-      const parsedPassword = typeof password === 'string' ? password : String(password ?? '');
-      const usernameMatches = parsedUsername === HARDCODED_ADMIN_USERNAME;
-      const passwordMatches = parsedPassword === HARDCODED_ADMIN_PASSWORD;
+      const accessToken = getBearerToken(req);
+      const { email, password } = req.body ?? {};
+      const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
 
-      console.log('[AdminLogin] parsed request', {
-        username: parsedUsername,
-        passwordProvided: Boolean(password),
-      });
-      console.log('[AdminLogin] credential comparison', { usernameMatches, passwordMatches });
-      console.log('[AdminLogin] supabase call', 'none');
-
-      if (!usernameMatches || !passwordMatches) {
-        console.log('[AdminLogin] authentication failed', { responseStatus: 401 });
-        return res.status(401).json({ success: false, error: 'Invalid admin credentials' });
+      if (!supabase) {
+        const responseBody = { success: false, error: 'Supabase client is not configured' };
+        logAdminLoginResponse(500, responseBody);
+        return res.status(500).json(responseBody);
       }
 
-      const expiresAt = new Date(Date.now() + HARDCODED_ADMIN_SESSION_EXPIRATION_MINUTES * 60 * 1000).toISOString();
-      const cookieValue = createSessionCookie(HARDCODED_ADMIN_ID, HARDCODED_ADMIN_LINK_ID, expiresAt);
-      res.setHeader('Set-Cookie', cookieValue);
+      if (accessToken) {
+        const { data, error } = await supabase.auth.getUser(accessToken);
+        if (!error && data?.user?.email) {
+          const admin = await getAdminByEmail(data.user.email);
+          const responseBody = { success: true, admin };
+          logAdminLoginResponse(200, responseBody);
+          return res.json(responseBody);
+        }
+      }
 
-      console.log('[AdminLogin] session created', {
-        adminId: HARDCODED_ADMIN_ID,
-        linkId: HARDCODED_ADMIN_LINK_ID,
-        expiresAt,
+      if (!normalizedEmail || !password) {
+        const responseBody = { success: false, error: 'Email and password are required' };
+        logAdminLoginResponse(400, responseBody);
+        return res.status(400).json(responseBody);
+      }
+
+      console.log('[Auth] signInWithPassword request', { email: normalizedEmail });
+      const { data, error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password: String(password) });
+      console.log('[Auth] signInWithPassword result', {
+        sessionId: data?.session?.access_token ? 'present' : null,
+        userId: data?.user?.id || null,
+        expiresAt: data?.session?.expires_at || null,
+        error: error?.message || null,
       });
-      console.log('[AdminLogin] response status', 200);
-      return res.json({ success: true, admin: HARDCODED_ADMIN });
+
+      if (error || !data?.session || !data.user) {
+        const responseBody = { success: false, error: error?.message || 'Unable to sign in' };
+        logAdminLoginResponse(401, responseBody);
+        return res.status(401).json(responseBody);
+      }
+
+      const admin = await getAdminByEmail(data.user.email || normalizedEmail);
+      if (!admin) {
+        const responseBody = { success: false, error: 'Admin account is not active in Supabase' };
+        logAdminLoginResponse(403, responseBody);
+        return res.status(403).json(responseBody);
+      }
+
+      const responseBody = { success: true, admin };
+      logAdminLoginResponse(200, responseBody);
+      return res.json(responseBody);
     } catch (err: any) {
-      console.error('[AdminLogin] exception', err?.message, err?.stack);
-      console.log('[AdminLogin] response status', 500);
-      return res.status(500).json({ success: false, error: err.message });
+      console.error('[Auth] exception', err);
+      console.error('[Auth] stack trace', err?.stack || 'No stack trace available');
+      const responseBody = { success: false, error: err.message };
+      logAdminLoginResponse(500, responseBody);
+      return res.status(500).json(responseBody);
     }
   });
 
