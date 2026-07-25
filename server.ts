@@ -461,17 +461,43 @@ async function startServer() {
   });
 
   app.post('/api/admin-login', async (req, res) => {
+    const method = req.method;
+    const url = req.originalUrl || req.url;
+    console.log('[AdminLogin] handler entered', { method, url });
     try {
-      const { username, password } = req.body;
-      if (username !== HARDCODED_ADMIN_USERNAME || password !== HARDCODED_ADMIN_PASSWORD) {
+      const { username, password } = req.body ?? {};
+      const parsedUsername = typeof username === 'string' ? username : String(username ?? '');
+      const parsedPassword = typeof password === 'string' ? password : String(password ?? '');
+      const usernameMatches = parsedUsername === HARDCODED_ADMIN_USERNAME;
+      const passwordMatches = parsedPassword === HARDCODED_ADMIN_PASSWORD;
+
+      console.log('[AdminLogin] parsed request', {
+        username: parsedUsername,
+        passwordProvided: Boolean(password),
+      });
+      console.log('[AdminLogin] credential comparison', { usernameMatches, passwordMatches });
+      console.log('[AdminLogin] supabase call', 'none');
+
+      if (!usernameMatches || !passwordMatches) {
+        console.log('[AdminLogin] authentication failed', { responseStatus: 401 });
         return res.status(401).json({ success: false, error: 'Invalid admin credentials' });
       }
+
       const expiresAt = new Date(Date.now() + HARDCODED_ADMIN_SESSION_EXPIRATION_MINUTES * 60 * 1000).toISOString();
       const cookieValue = createSessionCookie(HARDCODED_ADMIN_ID, HARDCODED_ADMIN_LINK_ID, expiresAt);
       res.setHeader('Set-Cookie', cookieValue);
+
+      console.log('[AdminLogin] session created', {
+        adminId: HARDCODED_ADMIN_ID,
+        linkId: HARDCODED_ADMIN_LINK_ID,
+        expiresAt,
+      });
+      console.log('[AdminLogin] response status', 200);
       return res.json({ success: true, admin: HARDCODED_ADMIN });
     } catch (err: any) {
-      res.status(500).json({ success: false, error: err.message });
+      console.error('[AdminLogin] exception', err?.message, err?.stack);
+      console.log('[AdminLogin] response status', 500);
+      return res.status(500).json({ success: false, error: err.message });
     }
   });
 
