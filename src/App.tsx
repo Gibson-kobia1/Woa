@@ -8,6 +8,7 @@ import { Step3FinancialReview } from './components/Step3FinancialReview';
 import { SuccessScreen } from './components/SuccessScreen';
 import { VerificationScreen } from './components/VerificationScreen';
 import AdminPage from './components/AdminPage';
+import ViewerPage from './components/ViewerPage';
 import { AppStep, LoanFormData, SubmittedApplication } from './types';
 import { calculateMonthlyPayment } from './utils/calculator';
 
@@ -31,6 +32,7 @@ export default function App() {
     console.log('[App] Initializing, pathname:', window.location.pathname, 'isAdmin:', isAdmin);
     return isAdmin;
   });
+  const [isViewerView, setIsViewerView] = useState<boolean>(() => window.location.pathname === '/viewer');
   const [formData, setFormData] = useState<LoanFormData>(initialFormData);
   const [submittedApplication, setSubmittedApplication] = useState<SubmittedApplication | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -39,8 +41,10 @@ export default function App() {
     console.log('[App] useEffect - current isAdminView:', isAdminView);
     const handlePopState = () => {
       const newIsAdmin = window.location.pathname === '/admin';
-      console.log('[App] popstate - pathname:', window.location.pathname, 'newIsAdmin:', newIsAdmin);
+      const newIsViewer = window.location.pathname === '/viewer';
+      console.log('[App] popstate - pathname:', window.location.pathname, 'newIsAdmin:', newIsAdmin, 'newIsViewer:', newIsViewer);
       setIsAdminView(newIsAdmin);
+      setIsViewerView(newIsViewer);
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
@@ -56,6 +60,7 @@ export default function App() {
     console.log('[App] Navigating back to /');
     window.history.pushState({}, '', '/');
     setIsAdminView(false);
+    setIsViewerView(false);
   };
 
   const updateFormData = (fields: Partial<LoanFormData>) => {
@@ -138,6 +143,24 @@ export default function App() {
         />
         <main className="flex-1 flex items-center justify-center p-3 sm:p-6">
           <AdminPage onBackToApp={navigateToApp} />
+        </main>
+        <footer className="py-4 text-center text-xs text-slate-400 font-medium">
+          &copy; 2025 EcoCash Admin
+        </footer>
+      </div>
+    );
+  }
+
+  if (isViewerView) {
+    return (
+      <div className="min-h-screen bg-slate-100/90 text-slate-900 font-sans flex flex-col justify-between selection:bg-blue-500 selection:text-white">
+        <Header
+          currentStep={currentStep}
+          onBack={navigateToApp}
+          onReset={navigateToApp}
+        />
+        <main className="flex-1 p-3 sm:p-6">
+          <ViewerPage onBackToApp={navigateToApp} />
         </main>
         <footer className="py-4 text-center text-xs text-slate-400 font-medium">
           &copy; 2025 EcoCash Admin
