@@ -297,18 +297,71 @@ const getLocalAdminLinkById = (id: string) =>
 
 const app = express();
 const requestedPort = process.env.PORT || 3000;
-  const PORT = Number(requestedPort);
+const PORT = Number(requestedPort);
+
+const getRegisteredRoutes = () => {
+  const stack = (app as any)._router?.stack ?? [];
+  const routes: Array<{ method: string; path: string }> = [];
+
+  const visitLayer = (layer: any) => {
+    if (!layer) return;
+
+    if (layer.route) {
+      const methods = Object.keys(layer.route.methods || {}).filter((method) => layer.route.methods[method]);
+      methods.forEach((method) => {
+        routes.push({ method: method.toUpperCase(), path: layer.route.path });
+      });
+      return;
+    }
+
+    if (layer.name === 'router' && layer.handle?.stack) {
+      layer.handle.stack.forEach(visitLayer);
+    }
+  };
+
+  stack.forEach(visitLayer);
+  return routes;
+};
+
+const logRegisteredRoutes = () => {
+  const routes = getRegisteredRoutes();
+  console.log('[Debug] Registered routes', routes);
+  console.log('[Debug] Runtime environment', process.env.NODE_ENV || 'development');
+  console.log('[Debug] /api/admin-login registered', routes.some((route) => route.method === 'POST' && route.path === '/api/admin-login'));
+};
+
+const logAdminLoginResponse = (status: number, body: unknown) => {
+  console.log('[AdminLogin] response', { status, body });
+};
 
 async function startServer() {
   app.use(express.json());
 
-  // Request logging middleware
   app.use((req, res, next) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+    console.log('[Debug][Request]', {
+      timestamp: new Date().toISOString(),
+      method: req.method,
+      url: req.originalUrl || req.url,
+      headers: {
+        origin: req.headers.origin || null,
+        host: req.headers.host || null,
+        'user-agent': req.headers['user-agent'] || null,
+      },
+    });
     next();
   });
 
   // API Endpoints
+  app.get('/api/debug/routes', (_req, res) => {
+    const routes = getRegisteredRoutes();
+    res.json({
+      success: true,
+      runtimeEnvironment: process.env.NODE_ENV || 'development',
+      routes,
+      adminLoginRegistered: routes.some((route) => route.method === 'POST' && route.path === '/api/admin-login'),
+    });
+  });
+
   app.get('/api/events', (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
@@ -941,6 +994,47 @@ async function startServer() {
     } catch (err: any) {
       res.status(500).json({ success: false, error: err.message });
     }
+  });
+
+  console.log('[Server] started');
+  console.log('[Server] environment', process.env.NODE_ENV || 'development');
+  logRegisteredRoutes();
+
+  app.use((req, res, next) => {
+    const matchingRoutes = getRegisteredRoutes().filter((route) => route.path === req.path || route.path === `${req.baseUrl}${req.path}`);
+    const allowedMethods = matchingRoutes.map((route) => route.method);
+    if (matchingRoutes.length > 0 && !allowedMethods.includes(req.method.toUpperCase())) {
+      console.log('[Debug][405]', {
+        path: req.path,
+        method: req.method,
+        allowedMethods,
+      });
+    }
+
+    console.log('[Debug][UnhandledRoute]', {
+      path: req.path,
+      method: req.method,
+      allowedMethods: res.get('Allow') || null,
+    });
+    next();
+  });
+
+  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error('[Debug][ErrorMiddleware]', {
+      path: req.path,
+      method: req.method,
+      error: err?.message,
+      stack: err?.stack,
+    });
+    next(err);
+  });
+
+  app.use((req, res) => {
+    console.log('[Debug][404]', {
+      path: req.path,
+      method: req.method,
+    });
+    res.status(404).json({ success: false, error: 'Not found' });
   });
 
   // Vite or Static files middleware
