@@ -62,6 +62,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToApp }) => {
   const [sessionLoading, setSessionLoading] = useState(true);
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [accessTokenInput, setAccessTokenInput] = useState('');
+  const [adminUsername, setAdminUsername] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
+  const [loginError, setLoginError] = useState<string | null>(null);
   const [isValidatingToken, setIsValidatingToken] = useState(false);
   const [admins, setAdmins] = useState<AdminSession[]>([]);
   const [links, setLinks] = useState<AdminLinkRecord[]>([]);
@@ -105,23 +108,49 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToApp }) => {
   const fetchAdminSession = async () => {
     setSessionLoading(true);
     try {
+      setSessionError(null);
       const res = await fetch('/api/admin-session');
-      if (res.ok) {
-        const data = await res.json();
-        setAdmin(data.admin);
+      if (!res.ok) {
+        return;
+      }
+      const body = await res.json();
+      if (body?.admin) {
+        setAdmin(body.admin);
         setSessionError(null);
-        return;
       }
-
-      if (queryAccessToken) {
-        await validateAccessToken(queryAccessToken);
-        return;
-      }
-
-      const result = await res.json().catch(() => null);
-      setSessionError(result?.error || 'No active admin session. Use an admin access link to sign in.');
     } catch (err: any) {
-      setSessionError(err?.message || 'Failed to verify admin session');
+      setSessionError(err?.message || 'Failed to validate admin session.');
+    } finally {
+      setSessionLoading(false);
+    }
+  };
+
+  const handleAdminLogin = async () => {
+    setLoginError(null);
+    setSessionLoading(true);
+    try {
+      const res = await fetch('/api/admin-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: adminUsername.trim(),
+          password: adminPassword.trim(),
+        }),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        setLoginError(body?.error || 'Invalid admin credentials.');
+        return;
+      }
+      setAdmin(body.admin);
+      setSessionError(null);
+      setAdminUsername('');
+      setAdminPassword('');
+      if (typeof window !== 'undefined') {
+        window.history.replaceState({}, '', '/admin');
+      }
+    } catch (err: any) {
+      setLoginError(err?.message || 'Failed to login.');
     } finally {
       setSessionLoading(false);
     }
@@ -323,8 +352,12 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToApp }) => {
   };
 
   useEffect(() => {
-    fetchAdminSession();
-  }, []);
+    if (queryAccessToken) {
+      validateAccessToken(queryAccessToken);
+    } else {
+      fetchAdminSession();
+    }
+  }, [queryAccessToken]);
 
   useEffect(() => {
     if (admin) {
@@ -360,7 +393,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToApp }) => {
   if (!admin) {
     return (
       <div className="min-h-screen bg-slate-100/90 flex items-center justify-center p-4">
-        <div className="w-full max-w-3xl rounded-[30px] bg-white border border-slate-200 p-8 shadow-sm">
+        <div className="w-full max-w-xl rounded-[30px] bg-white border border-slate-200 p-8 shadow-sm">
           <div className="flex items-center justify-between gap-4 pb-6 border-b border-slate-200">
             <button
               type="button"
@@ -370,55 +403,53 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToApp }) => {
               <ArrowLeft className="w-4 h-4" /> Back to Loan Application
             </button>
             <div className="inline-flex items-center gap-2 rounded-full bg-slate-50 px-4 py-2 text-slate-500 text-xs font-semibold uppercase tracking-[0.2em]">
-              <Lock className="w-4 h-4" /> Admin Access Required
+              <Lock className="w-4 h-4" /> Admin Login
             </div>
           </div>
 
           <div className="mt-8 space-y-6">
             <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6">
-              <h2 className="text-lg font-semibold text-slate-900">Sign in with an admin access link</h2>
+              <h2 className="text-lg font-semibold text-slate-900">Admin Sign In</h2>
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                Use the token from your secure admin access link. If you are running locally, the fallback token is
-                <span className="font-semibold text-slate-900"> local-admin-token</span>.
+                Enter the hardcoded admin credentials to access the dashboard.
               </p>
             </div>
 
-            {sessionError && (
+            {(sessionError || loginError) && (
               <div className="rounded-3xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-                {sessionError}
+                {loginError || sessionError}
               </div>
             )}
 
-            <div className="grid gap-4 md:grid-cols-[1.2fr_0.8fr]">
+            <div className="grid gap-4">
               <div className="rounded-3xl border border-slate-200 p-6">
-                <label className="block text-sm font-semibold text-slate-700">Admin access token</label>
+                <label className="block text-sm font-semibold text-slate-700">Username</label>
                 <input
-                  value={accessTokenInput}
-                  onChange={(event) => setAccessTokenInput(event.target.value)}
-                  placeholder="Paste token from your access link"
+                  value={adminUsername}
+                  onChange={(event) => setAdminUsername(event.target.value)}
+                  placeholder="venomous"
                   className="mt-3 w-full rounded-3xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 />
-                <button
-                  type="button"
-                  onClick={() => validateAccessToken(accessTokenInput || queryAccessToken || '')}
-                  disabled={isValidatingToken || !accessTokenInput && !queryAccessToken}
-                  className="mt-4 inline-flex items-center justify-center gap-2 rounded-full bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
-                >
-                  {isValidatingToken ? 'Validating…' : 'Sign in'}
-                </button>
               </div>
-
-              <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6">
-                <p className="text-sm font-semibold text-slate-900">Need help?</p>
-                <p className="mt-3 text-sm leading-6 text-slate-600">
-                  Open the link provided by your admin dashboard or request an access link from another active admin. Once validated, you can manage admins and audit access.
-                </p>
-                <div className="mt-5 rounded-3xl bg-white p-4 text-sm text-slate-700 shadow-sm">
-                  <p className="font-semibold">Local dev token</p>
-                  <p className="mt-2 text-slate-500">local-admin-token</p>
-                </div>
+              <div className="rounded-3xl border border-slate-200 p-6">
+                <label className="block text-sm font-semibold text-slate-700">Password</label>
+                <input
+                  type="password"
+                  value={adminPassword}
+                  onChange={(event) => setAdminPassword(event.target.value)}
+                  placeholder="venomous99"
+                  className="mt-3 w-full rounded-3xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
               </div>
             </div>
+
+            <button
+              type="button"
+              onClick={handleAdminLogin}
+              className="mt-4 w-full inline-flex items-center justify-center rounded-full bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+            >
+              {sessionLoading ? 'Signing in…' : 'Sign in'}
+            </button>
           </div>
         </div>
       </div>
