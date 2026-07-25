@@ -232,6 +232,17 @@ const countActiveAdmins = async () => {
 };
 
 const applications: LoanApplication[] = [];
+const realtimeSubscribers = new Set<(eventName: string, data: any) => void>();
+
+const notifyRealtime = (eventName: string, data: any) => {
+  realtimeSubscribers.forEach((subscriber) => {
+    try {
+      subscriber(eventName, data);
+    } catch (err) {
+      console.error('[Server] Realtime subscriber failed:', err);
+    }
+  });
+};
 
 const localAdmins: AdminRecord[] = [
   {
@@ -272,8 +283,11 @@ if (!supabase && process.env.NODE_ENV !== 'production') {
   console.log(`[Server] Local admin access available at /admin?access_token=${localAdminAccessToken}`);
 }
 
-const getLocalAdminById = (id: string) =>
-  localAdmins.find((admin) => admin.id === id && admin.is_active);
+const getLocalAdminById = (id: string) => {
+  // Accept the hardcoded admin as a valid local admin when running without Supabase.
+  if (id === HARDCODED_ADMIN_ID) return HARDCODED_ADMIN;
+  return localAdmins.find((admin) => admin.id === id && admin.is_active);
+};
 
 const getLocalAdminLinkByTokenHash = (tokenHash: string) =>
   localAdminLinks.find((link) => link.token_hash === tokenHash);
@@ -294,6 +308,23 @@ async function startServer() {
   });
 
   // API Endpoints
+  app.get('/api/events', (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders?.();
+
+    const subscriber = (eventName: string, data: any) => {
+      res.write(`event: ${eventName}\n`);
+      res.write(`data: ${JSON.stringify(data)}\n\n`);
+    };
+
+    realtimeSubscribers.add(subscriber);
+    req.on('close', () => {
+      realtimeSubscribers.delete(subscriber);
+    });
+  });
+
   app.post('/api/applications', async (req, res) => {
     try {
       const data = req.body;
@@ -327,6 +358,7 @@ async function startServer() {
         }
 
         const insertedApp = insertedData && Array.isArray(insertedData) && insertedData.length > 0 ? insertedData[0] : newApp;
+        notifyRealtime('application-created', { application: insertedApp });
         res.status(201).json({
           success: true,
           message: 'Loan application submitted successfully.',
@@ -336,6 +368,7 @@ async function startServer() {
       }
 
       applications.unshift(newApp);
+      notifyRealtime('application-created', { application: newApp });
 
       res.status(201).json({
         success: true,
@@ -775,7 +808,7 @@ async function startServer() {
         await logAdminChange('admin_link_created', { linkId: data.id, expiresAt: data.expires_at }, currentAdmin.id, currentAdmin.id);
 
         const baseUrl = process.env.APP_URL || 'http://localhost:3000';
-        const linkUrl = `${baseUrl.replace(/\/$/, '')}/admin?access_token=${token}`;
+        const linkUrl = `${baseUrl.replace(/\/$/, '')}/viewer?token=${token}`;
 
         return res.status(201).json({ success: true, link: linkUrl, expires_at: data.expires_at, id: data.id });
       }
@@ -794,7 +827,7 @@ async function startServer() {
       await logAdminChange('admin_link_created', { linkId: newLink.id, expiresAt: newLink.expires_at }, currentAdmin.id, currentAdmin.id);
 
       const baseUrl = process.env.APP_URL || 'http://localhost:3000';
-      const linkUrl = `${baseUrl.replace(/\/$/, '')}/admin?access_token=${token}`;
+      const linkUrl = `${baseUrl.replace(/\/$/, '')}/viewer?token=${token}`;
       return res.status(201).json({ success: true, link: linkUrl, expires_at: newLink.expires_at, id: newLink.id });
     } catch (err: any) {
       res.status(500).json({ success: false, error: err.message });
