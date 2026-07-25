@@ -7,7 +7,7 @@ import { Step2ApplicantDetails } from './components/Step2ApplicantDetails';
 import { Step3FinancialReview } from './components/Step3FinancialReview';
 import { SuccessScreen } from './components/SuccessScreen';
 import { VerificationScreen } from './components/VerificationScreen';
-import { AdminPage } from './components/AdminPage';
+import AdminPage from './components/AdminPage';
 import { AppStep, LoanFormData, SubmittedApplication } from './types';
 import { calculateMonthlyPayment } from './utils/calculator';
 
