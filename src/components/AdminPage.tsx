@@ -171,7 +171,13 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (username !== hardcodedCredentials.username || password !== hardcodedCredentials.password) {
+    const normalizedUsername = username.trim();
+    const normalizedPassword = password.trim();
+
+    const usernameMatches = normalizedUsername === hardcodedCredentials.username;
+    const passwordMatches = normalizedPassword === hardcodedCredentials.password;
+
+    if (!usernameMatches || !passwordMatches) {
       setError('Invalid credentials');
       return;
     }
@@ -180,9 +186,10 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
       const res = await fetch('/api/admin-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username: normalizedUsername, password: normalizedPassword }),
       });
       const body = await res.json().catch(() => ({}));
+      console.log('[Login] backend response status:', res.status, 'body:', body);
       if (!res.ok) {
         throw new Error(body?.error || 'Invalid credentials');
       }
@@ -193,6 +200,7 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
       await fetchLinks();
       await connectRealtime();
     } catch (err: any) {
+      console.error('[Login] error', err);
       setError(err?.message || 'Unable to login');
     }
   };
@@ -246,7 +254,7 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
         <form onSubmit={handleLogin} className="mt-6 space-y-4">
           <div>
             <label className="block text-sm font-semibold text-slate-700">Username</label>
-            <input value={username} onChange={(e) => setUsername(e.target.value)} className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3" required />
+            <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3" required />
           </div>
           <div>
             <label className="block text-sm font-semibold text-slate-700">Password</label>
