@@ -134,7 +134,7 @@ const getCurrentAdmin = async (req: express.Request) => {
   const now = new Date().toISOString();
   if (supabase) {
     const { data: linkData, error: linkError } = await supabase
-      .from<AdminLinkRecord>('admin_links')
+      .from('admin_links')
       .select('admin_id,revoked,expires_at')
       .eq('id', session.linkId)
       .single();
@@ -148,7 +148,7 @@ const getCurrentAdmin = async (req: express.Request) => {
     }
 
     const { data: adminData, error: adminError } = await supabase
-      .from<AdminRecord>('admins')
+      .from('admins')
       .select('id,email,name,is_active,created_at,created_by')
       .eq('id', session.adminId)
       .eq('is_active', true)
@@ -217,7 +217,7 @@ const logAdminChange = async (
 const countActiveAdmins = async () => {
   if (supabase) {
     const { data, error, count } = await supabase
-      .from<AdminRecord>('admins')
+      .from('admins')
       .select('id', { count: 'exact', head: true })
       .eq('is_active', true);
 
@@ -295,10 +295,11 @@ const getLocalAdminLinkByTokenHash = (tokenHash: string) =>
 const getLocalAdminLinkById = (id: string) =>
   localAdminLinks.find((link) => link.id === id);
 
-async function startServer() {
-  const app = express();
-  const PORT = 3000;
+const app = express();
+const requestedPort = process.env.PORT || 3000;
+  const PORT = Number(requestedPort);
 
+async function startServer() {
   app.use(express.json());
 
   // Request logging middleware
@@ -573,7 +574,7 @@ async function startServer() {
 
       if (supabase) {
         const { data, error } = await supabase!
-          .from<AdminRecord>('admins')
+          .from('admins')
           .select('*')
           .order('created_at', { ascending: true });
 
@@ -606,7 +607,7 @@ async function startServer() {
 
       if (supabase) {
         const { data, error } = await supabase!
-          .from<AdminRecord>('admins')
+          .from('admins')
           .insert([
             {
               email: normalizedEmail,
@@ -661,7 +662,7 @@ async function startServer() {
 
       if (supabase) {
         const { data: targetAdmin, error: targetError } = await supabase!
-          .from<AdminRecord>('admins')
+          .from('admins')
           .select('*')
           .eq('id', targetId)
           .single();
@@ -898,7 +899,7 @@ async function startServer() {
 
       if (supabase) {
         const { data, error } = await supabase!
-          .from<AdminLogRecord>('admin_change_logs')
+          .from('admin_change_logs')
           .select('*')
           .order('created_at', { ascending: false })
           .limit(100);
@@ -948,11 +949,15 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`EcoCash Server running on http://0.0.0.0:${PORT}`);
-  });
+  if (!process.env.VERCEL) {
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`EcoCash Server running on http://0.0.0.0:${PORT}`);
+    });
+  }
 }
 
 startServer().catch((err) => {
   console.error('Failed to start server:', err);
 });
+
+export default app;

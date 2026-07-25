@@ -1,5 +1,10 @@
 {
+  "version": 2,
   "builds": [
+    {
+      "src": "server.ts",
+      "use": "@vercel/node"
+    },
     {
       "src": "package.json",
       "use": "@vercel/static-build",
@@ -7,6 +12,10 @@
     }
   ],
   "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/server"
+    },
     {
       "source": "/((?!api/|assets/|favicon\\.ico|index\\.html|robots\\.txt|sitemap\\.xml).*)",
       "destination": "/index.html"
