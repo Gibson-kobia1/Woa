@@ -38,7 +38,7 @@ const ViewerPage: React.FC<ViewerPageProps> = ({ onBackToApp }) => {
   const fetchApplications = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/applications?limit=1000');
+      const res = await fetch('/api/applications?limit=1000', { credentials: 'include' });
       if (!res.ok) throw new Error('Unable to load applications');
       const body = await res.json();
       setApplications(sortApplications(body.applications ?? []));
@@ -63,6 +63,7 @@ const ViewerPage: React.FC<ViewerPageProps> = ({ onBackToApp }) => {
     try {
       const res = await fetch('/api/admin-links/validate', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token }),
       });
