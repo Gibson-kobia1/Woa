@@ -1,6 +1,5 @@
 {
   "name": "EcoCash Loan Application",
   "description": "Multi-step fintech loan application interface with interactive loan calculator and instant application review.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "requestFramePermissions": []
 }

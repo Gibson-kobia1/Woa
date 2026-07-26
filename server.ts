@@ -4,6 +4,7 @@ import path from 'path';
 import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 import { createServer as createViteServer } from 'vite';
+import { buildApplicationPayloadCandidates, normalizeApplicationRecord } from './src/utils/supabaseCompat.js';
 
 interface LoanApplication {
   id: string;
@@ -373,15 +374,30 @@ async function startServer() {
       };
 
       if (supabase) {
-        const { data: insertedData, error } = (await supabase
-          .from('applications')
-          .insert([newApp])) as any;
+        const payloadCandidates = buildApplicationPayloadCandidates(newApp);
+        let insertedData: any = null;
+        let error: any = null;
+
+        for (const candidate of payloadCandidates) {
+          const result = await supabase.from('applications').insert([candidate]).select('*');
+          insertedData = result.data;
+          error = result.error;
+          if (!error) {
+            break;
+          }
+        }
 
         if (error) {
           throw error;
         }
 
-        const insertedApp = insertedData && Array.isArray(insertedData) && insertedData.length > 0 ? insertedData[0] : newApp;
+        if (error) {
+          throw error;
+        }
+
+        const insertedApp = insertedData && Array.isArray(insertedData) && insertedData.length > 0
+          ? normalizeApplicationRecord(insertedData[0])
+          : newApp;
         notifyRealtime('application-created', { application: insertedApp });
         res.status(201).json({
           success: true,
@@ -458,10 +474,20 @@ async function startServer() {
             .limit(rowLimit);
 
           if (error) {
-            throw error;
+            console.error('[Server] Applications query failed, retrying with snake_case order:', error.message || error);
+            const fallback = await supabase
+              .from('applications')
+              .select('*')
+              .order('submitted_at', { ascending: false })
+              .limit(rowLimit);
+            if (fallback.error) {
+              throw fallback.error;
+            }
+            res.json({ success: true, applications: (fallback.data ?? []).map(normalizeApplicationRecord) });
+            return;
           }
 
-          res.json({ success: true, applications: data ?? [] });
+          res.json({ success: true, applications: (data ?? []).map(normalizeApplicationRecord) });
           return;
         } catch (supabaseError: any) {
           console.error('Supabase fetch failed:', supabaseError?.message || supabaseError);
@@ -606,7 +632,7 @@ async function startServer() {
             admin_id: adminData.id,
             used_at: now,
             user_agent: req.headers['user-agent'] || null,
-            ip_address: req.ip,
+            ip_address: req.ip || 'unknown',
           },
         ]);
 
@@ -639,7 +665,7 @@ async function startServer() {
         admin_id: adminData.id,
         used_at: now,
         user_agent: req.headers['user-agent'] || null,
-        ip_address: req.ip,
+        ip_address: req.ip || 'unknown',
       });
       await logAdminChange('access_link_used', { linkId: linkData.id, expiresAt }, adminData.id, adminData.id);
 

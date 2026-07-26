@@ -1,4 +1,4 @@
-# Woa Project - AI Reference
+# Woa Project - Admin Dashboard
 
 ## Overview
 This app is a loan application and admin dashboard system for the Woa project.

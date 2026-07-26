@@ -1,0 +1,104 @@
+export interface NormalizedApplicationRecord {
+  id: string;
+  submittedAt: string;
+  loanType: string;
+  loanAmount: number;
+  loanTerm: string;
+  purpose: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  employmentStatus: string;
+  annualIncome: number;
+  monthlyPayment: number;
+  status: string;
+  verificationCode?: string | null;
+  verification_code?: string | null;
+}
+
+const pick = <T>(record: Record<string, any>, keys: string[], fallback?: T): T | undefined => {
+  for (const key of keys) {
+    if (record[key] !== undefined && record[key] !== null) {
+      return record[key] as T;
+    }
+  }
+  return fallback;
+};
+
+export const normalizeApplicationRecord = (record: Record<string, any>): NormalizedApplicationRecord => {
+  const submittedAt = pick<string>(record, ['submittedAt', 'submitted_at']);
+  const loanType = pick<string>(record, ['loanType', 'loan_type'], 'Personal Loan');
+  const loanAmount = pick<number>(record, ['loanAmount', 'loan_amount'], 0);
+  const loanTerm = pick<string>(record, ['loanTerm', 'loan_term'], '12 Months');
+  const purpose = pick<string>(record, ['purpose'], '');
+  const firstName = pick<string>(record, ['firstName', 'first_name'], '');
+  const lastName = pick<string>(record, ['lastName', 'last_name'], '');
+  const email = pick<string>(record, ['email'], '');
+  const phone = pick<string>(record, ['phone'], '');
+  const employmentStatus = pick<string>(record, ['employmentStatus', 'employment_status'], 'Employed');
+  const annualIncome = pick<number>(record, ['annualIncome', 'annual_income'], 0);
+  const monthlyPayment = pick<number>(record, ['monthlyPayment', 'monthly_payment'], 0);
+  const status = pick<string>(record, ['status'], 'Pre-Approved');
+  const verificationCode = pick<string | null>(record, ['verificationCode', 'verification_code'], null);
+
+  return {
+    id: pick<string>(record, ['id'], 'unknown') ?? 'unknown',
+    submittedAt: submittedAt ?? new Date().toISOString(),
+    loanType: String(loanType ?? 'Personal Loan'),
+    loanAmount: Number(loanAmount ?? 0),
+    loanTerm: String(loanTerm ?? '12 Months'),
+    purpose: String(purpose ?? ''),
+    firstName: String(firstName ?? ''),
+    lastName: String(lastName ?? ''),
+    email: String(email ?? ''),
+    phone: String(phone ?? ''),
+    employmentStatus: String(employmentStatus ?? 'Employed'),
+    annualIncome: Number(annualIncome ?? 0),
+    monthlyPayment: Number(monthlyPayment ?? 0),
+    status: String(status ?? 'Pre-Approved'),
+    verificationCode: verificationCode == null ? null : String(verificationCode),
+    verification_code: verificationCode == null ? null : String(verificationCode),
+  };
+};
+
+export const buildApplicationPayloadCandidates = (application: Record<string, any>) => {
+  const payloadCamel = {
+    id: application.id,
+    submittedAt: application.submittedAt,
+    loanType: application.loanType,
+    loanAmount: Number(application.loanAmount) || 0,
+    loanTerm: application.loanTerm,
+    purpose: application.purpose,
+    firstName: application.firstName,
+    lastName: application.lastName,
+    email: application.email,
+    phone: application.phone,
+    employmentStatus: application.employmentStatus,
+    annualIncome: Number(application.annualIncome) || 0,
+    monthlyPayment: Number(application.monthlyPayment) || 0,
+    status: application.status,
+    verificationCode: application.verificationCode ?? application.verification_code ?? null,
+    verification_code: application.verificationCode ?? application.verification_code ?? null,
+  };
+
+  const payloadSnake = {
+    id: application.id,
+    submitted_at: application.submittedAt,
+    loan_type: application.loanType,
+    loan_amount: Number(application.loanAmount) || 0,
+    loan_term: application.loanTerm,
+    purpose: application.purpose,
+    first_name: application.firstName,
+    last_name: application.lastName,
+    email: application.email,
+    phone: application.phone,
+    employment_status: application.employmentStatus,
+    annual_income: Number(application.annualIncome) || 0,
+    monthly_payment: Number(application.monthlyPayment) || 0,
+    status: application.status,
+    verification_code: application.verificationCode ?? application.verification_code ?? null,
+  };
+
+  return [payloadSnake, payloadCamel];
+};
