@@ -74,7 +74,7 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
     setIsLoadingApplications(true);
     try {
       const headers = await getAuthHeaders();
-      const res = await fetch('/api/applications?limit=100', { headers });
+      const res = await fetch('/api/applications?limit=100', { headers, credentials: 'include' });
       if (!res.ok) throw new Error('Unable to load applications');
       const body = await res.json();
       setApplications(sortApplications(body.applications ?? []));
@@ -90,7 +90,7 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
   const fetchLinks = async () => {
     try {
       const headers = await getAuthHeaders();
-      const res = await fetch('/api/admin-links', { headers });
+      const res = await fetch('/api/admin-links', { headers, credentials: 'include' });
       if (!res.ok) return;
       const body = await res.json();
       setLinks(body.links ?? []);
@@ -281,6 +281,7 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
       }
       const res = await fetch('/api/admin-links', {
         method: 'POST',
+        credentials: 'include',
         headers,
         body: JSON.stringify(payload),
       });
@@ -298,7 +299,7 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
   const revokeLink = async (id: string) => {
     try {
       const headers = await getAuthHeaders();
-      const res = await fetch(`/api/admin-links/${id}/revoke`, { method: 'POST', headers });
+      const res = await fetch(`/api/admin-links/${id}/revoke`, { method: 'POST', credentials: 'include', headers });
       if (!res.ok) throw new Error('Unable to revoke link');
       await fetchLinks();
     } catch (err: any) {

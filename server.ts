@@ -86,6 +86,98 @@ const getBearerToken = (req: express.Request) => {
   return token;
 };
 
+const parseCookies = (cookieHeader?: string | string[]) => {
+  const cookies: Record<string, string> = {};
+  const rawCookie = Array.isArray(cookieHeader) ? cookieHeader.join('; ') : cookieHeader ?? '';
+  rawCookie.split(';').forEach((chunk) => {
+    const [name, ...rest] = chunk.split('=');
+    if (!name) return;
+    cookies[name.trim()] = decodeURIComponent((rest || []).join('=').trim());
+  });
+  return cookies;
+};
+
+interface AdminSessionPayload {
+  adminId: string;
+  linkId: string;
+  expiresAt: string;
+}
+
+const deserializeSessionCookie = (cookieValue: string): AdminSessionPayload | null => {
+  try {
+    const splitIndex = cookieValue.lastIndexOf('.');
+    if (splitIndex < 0) return null;
+    const payloadBase64 = cookieValue.slice(0, splitIndex);
+    const signature = cookieValue.slice(splitIndex + 1);
+    if (!payloadBase64 || !signature) return null;
+    const payloadJson = Buffer.from(payloadBase64, 'base64').toString('utf-8');
+    const expectedSignature = signPayload(payloadJson);
+    const signatureBuffer = Buffer.from(signature, 'utf-8');
+    const expectedBuffer = Buffer.from(expectedSignature, 'utf-8');
+    if (signatureBuffer.length !== expectedBuffer.length || !crypto.timingSafeEqual(signatureBuffer, expectedBuffer)) {
+      return null;
+    }
+    const payload = JSON.parse(payloadJson) as AdminSessionPayload;
+    if (!payload?.adminId || !payload?.linkId || !payload?.expiresAt) return null;
+    const expiry = new Date(payload.expiresAt);
+    if (Number.isNaN(expiry.getTime()) || expiry < new Date()) return null;
+    return payload;
+  } catch {
+    return null;
+  }
+};
+
+const getAdminFromSessionCookie = async (req: express.Request) => {
+  const cookies = parseCookies(req.headers.cookie);
+  const sessionCookie = cookies.admin_session;
+  if (!sessionCookie) return null;
+
+  const payload = deserializeSessionCookie(sessionCookie);
+  if (!payload) return null;
+
+  const now = new Date().toISOString();
+  if (payload.expiresAt < now) return null;
+
+  if (supabase) {
+    const { data: linkData, error: linkError } = await supabase
+      .from('admin_links')
+      .select('id,admin_id,expires_at,revoked')
+      .eq('id', payload.linkId)
+      .single();
+
+    if (linkError || !linkData) {
+      return null;
+    }
+
+    if (linkData.revoked || linkData.expires_at < now || linkData.admin_id !== payload.adminId) {
+      return null;
+    }
+
+    const { data: adminData, error: adminError } = await supabase
+      .from('admins')
+      .select('id,email,name,is_active,created_at,created_by')
+      .eq('id', payload.adminId)
+      .eq('is_active', true)
+      .single();
+
+    if (adminError || !adminData) {
+      return null;
+    }
+
+    return adminData;
+  }
+
+  const localAdmin = getLocalAdminById(payload.adminId);
+  const localLink = getLocalAdminLinkById(payload.linkId);
+  if (!localAdmin || !localLink) {
+    return null;
+  }
+  if (localLink.revoked || localLink.expires_at < now || localLink.admin_id !== payload.adminId) {
+    return null;
+  }
+  return localAdmin;
+};
+
 const getAuthenticatedSupabaseUser = async (req: express.Request) => {
   const accessToken = getBearerToken(req);
   console.log('[Auth] verifying bearer token', { accessTokenPresent: Boolean(accessToken) });
@@ -139,11 +231,14 @@ const getAdminByEmail = async (email: string) => {
 
 const getCurrentAdmin = async (req: express.Request) => {
   const authUser = await getAuthenticatedSupabaseUser(req);
-  if (!authUser?.email) {
-    return null;
+  if (authUser?.email) {
+    const admin = await getAdminByEmail(authUser.email);
+    if (admin) {
+      return admin;
+    }
   }
 
-  return getAdminByEmail(authUser.email);
+  return getAdminFromSessionCookie(req);
 };
 
 const requireAdmin = async (req: express.Request, res: express.Response) => {
@@ -1055,15 +1150,13 @@ async function startServer() {
       error: err?.message,
       stack: err?.stack,
     });
+    if (req.path.startsWith('/api')) {
+      if (!res.headersSent) {
+        res.status(500).json({ success: false, error: err?.message || 'Internal server error' });
+      }
+      return;
+    }
     next(err);
-  });
-
-  app.use((req, res) => {
-    console.log('[Debug][404]', {
-      path: req.path,
-      method: req.method,
-    });
-    res.status(404).json({ success: false, error: 'Not found' });
   });
 
   // Vite or Static files middleware
@@ -1079,7 +1172,11 @@ async function startServer() {
     // Vite middleware handles static files and transforms HTML
     app.use(vite.middlewares);
 
-    // Final SPA fallback - serve index.html for any unhandled routes
+    app.use('/api', (_req, res) => {
+      res.status(404).json({ success: false, error: 'API route not found' });
+    });
+
+    // Final SPA fallback - serve index.html for any unhandled non-API routes
     app.use('*', async (req, res) => {
       console.log(`[Server] SPA fallback for: ${req.path}`);
       try {
@@ -1092,6 +1189,9 @@ async function startServer() {
     });
   } else {
     const distPath = path.join(process.cwd(), 'dist');
+    app.use('/api', (_req, res) => {
+      res.status(404).json({ success: false, error: 'API route not found' });
+    });
     app.use(express.static(distPath));
     app.get('*', (_req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
