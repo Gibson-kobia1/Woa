@@ -38,9 +38,23 @@ const ViewerPage: React.FC<ViewerPageProps> = ({ onBackToApp }) => {
   const fetchApplications = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/applications?limit=1000', { credentials: 'include' });
-      if (!res.ok) throw new Error('Unable to load applications');
-      const body = await res.json();
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get('token') || params.get('access_token') || '';
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers['x-admin-access-token'] = token;
+      }
+      const res = await fetch('/api/applications?limit=1000', { credentials: 'include', headers });
+      const text = await res.text();
+      console.log('[ViewerPage] applications response', { status: res.status, contentType: res.headers.get('content-type'), body: text });
+      let body: any = null;
+      try {
+        body = text ? JSON.parse(text) : null;
+      } catch (parseError) {
+        console.error('[ViewerPage] applications json parse failed', parseError);
+        throw new Error('Received an invalid response while loading submissions.');
+      }
+      if (!res.ok || !body?.success) throw new Error(body?.error || 'Unable to load applications');
       setApplications(sortApplications(body.applications ?? []));
       setError(null);
     } catch (err: any) {
@@ -64,11 +78,19 @@ const ViewerPage: React.FC<ViewerPageProps> = ({ onBackToApp }) => {
       const res = await fetch('/api/admin-links/validate', {
         method: 'POST',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-admin-access-token': token },
         body: JSON.stringify({ token }),
       });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
+      const text = await res.text();
+      console.log('[ViewerPage] validate link response', { status: res.status, contentType: res.headers.get('content-type'), body: text });
+      let body: any = null;
+      try {
+        body = text ? JSON.parse(text) : null;
+      } catch (parseError) {
+        console.error('[ViewerPage] validate link json parse failed', parseError);
+        throw new Error('Received an invalid response while validating the viewer link.');
+      }
+      if (!res.ok || !body?.success) {
         throw new Error(body?.error || 'Invalid or expired viewer link.');
       }
       setIsReady(true);
@@ -120,6 +142,9 @@ const ViewerPage: React.FC<ViewerPageProps> = ({ onBackToApp }) => {
     eventSource.onerror = () => {
       console.warn('[ViewerPage] realtime stream disconnected');
       eventSource.close();
+      window.setTimeout(() => {
+        void connectRealtime();
+      }, 1500);
     };
     channelRef.current = eventSource;
   };
