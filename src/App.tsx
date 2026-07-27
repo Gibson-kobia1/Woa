@@ -93,30 +93,35 @@ export default function App() {
     };
 
     try {
+      console.log('[App] Submitting application', { payload });
       const response = await fetch('/api/applications', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
-      if (response.ok) {
-        const result = await response.json();
-        setSubmittedApplication(result.application);
-      } else {
-        // Fallback for standalone/mock client state
-        const fallbackApp: SubmittedApplication = {
-          ...formData,
-          id: `ECO-${Math.floor(100000 + Math.random() * 900000)}`,
-          submittedAt: new Date().toISOString(),
-          monthlyPayment,
-          status: 'Pre-Approved',
-          annualIncome: Number(formData.annualIncome) || 0,
-          verificationCode: null,
-        };
-        setSubmittedApplication(fallbackApp);
+      const text = await response.text();
+      console.log('[App] Submission response', {
+        status: response.status,
+        contentType: response.headers.get('content-type'),
+        body: text,
+      });
+
+      let result: any = null;
+      try {
+        result = text ? JSON.parse(text) : null;
+      } catch (parseError) {
+        console.error('[App] Submission JSON parse failed', parseError);
+        throw new Error('Received an invalid response from the server.');
       }
-    } catch {
-      // Fallback in case of network issue
+
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.error || 'Unable to submit application.');
+      }
+
+      setSubmittedApplication(result.application);
+    } catch (error: any) {
+      console.error('[App] Submission error', error);
       const fallbackApp: SubmittedApplication = {
         ...formData,
         id: `ECO-${Math.floor(100000 + Math.random() * 900000)}`,

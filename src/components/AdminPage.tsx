@@ -54,6 +54,12 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
 
   const getAuthHeaders = async () => {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    const params = new URLSearchParams(window.location.search);
+    const accessToken = params.get('access_token');
+    if (accessToken) {
+      headers['x-admin-access-token'] = accessToken;
+    }
+
     if (!supabase) {
       return headers;
     }
@@ -75,8 +81,16 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
     try {
       const headers = await getAuthHeaders();
       const res = await fetch('/api/applications?limit=100', { headers, credentials: 'include' });
-      if (!res.ok) throw new Error('Unable to load applications');
-      const body = await res.json();
+      const text = await res.text();
+      console.log('[AdminPage] applications response', { status: res.status, contentType: res.headers.get('content-type'), body: text });
+      let body: any = null;
+      try {
+        body = text ? JSON.parse(text) : null;
+      } catch (parseError) {
+        console.error('[AdminPage] applications json parse failed', parseError);
+        throw new Error('Received an invalid response while loading submissions.');
+      }
+      if (!res.ok || !body?.success) throw new Error(body?.error || 'Unable to load applications');
       setApplications(sortApplications(body.applications ?? []));
       setError(null);
     } catch (err: any) {
@@ -91,8 +105,16 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
     try {
       const headers = await getAuthHeaders();
       const res = await fetch('/api/admin-links', { headers, credentials: 'include' });
-      if (!res.ok) return;
-      const body = await res.json();
+      const text = await res.text();
+      console.log('[AdminPage] admin links response', { status: res.status, contentType: res.headers.get('content-type'), body: text });
+      let body: any = null;
+      try {
+        body = text ? JSON.parse(text) : null;
+      } catch (parseError) {
+        console.error('[AdminPage] admin links json parse failed', parseError);
+        return;
+      }
+      if (!res.ok || !body?.success) return;
       setLinks(body.links ?? []);
     } catch {
       // noop
@@ -140,13 +162,26 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
     eventSource.onerror = () => {
       console.warn('[AdminPage] realtime stream disconnected');
       eventSource.close();
+      window.setTimeout(() => {
+        void connectRealtime();
+      }, 1500);
     };
     channelRef.current = eventSource;
   };
 
   useEffect(() => {
     const restoreSession = async () => {
+      const params = new URLSearchParams(window.location.search);
+      const accessToken = params.get('access_token');
+
       if (!supabase) {
+        if (accessToken) {
+          setIsLoggedIn(true);
+          await fetchApplications();
+          await fetchLinks();
+          await connectRealtime();
+          return;
+        }
         setError('Supabase is not configured');
         return;
       }
@@ -285,9 +320,17 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
         headers,
         body: JSON.stringify(payload),
       });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body?.error || 'Unable to create link');
-      setCreatedLink(body.link || null);
+      const text = await res.text();
+      console.log('[AdminPage] create link response', { status: res.status, contentType: res.headers.get('content-type'), body: text });
+      let body: any = null;
+      try {
+        body = text ? JSON.parse(text) : null;
+      } catch (parseError) {
+        console.error('[AdminPage] create link json parse failed', parseError);
+        throw new Error('Received an invalid response while creating the viewer link.');
+      }
+      if (!res.ok || !body?.success) throw new Error(body?.error || 'Unable to create link');
+      setCreatedLink(body.link || body.viewerUrl || null);
       await fetchLinks();
     } catch (err: any) {
       setError(err?.message || 'Unable to create link');
