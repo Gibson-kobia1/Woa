@@ -3,7 +3,6 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
-import { createServer as createViteServer } from 'vite';
 import { buildApplicationPayloadCandidates, normalizeApplicationRecord } from './src/utils/supabaseCompat.js';
 
 interface LoanApplication {
@@ -1289,31 +1288,42 @@ async function startServer() {
   // Vite or Static files middleware
   if (process.env.NODE_ENV !== 'production') {
     console.log('[Server] Setting up Vite middleware for dev mode');
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: 'spa',
-    });
-    
-    const indexHtml = fs.readFileSync(path.resolve('index.html'), 'utf-8');
+    try {
+      const { createServer: createViteServer } = await import('vite');
+      const vite = await createViteServer({
+        server: { middlewareMode: true },
+        appType: 'spa',
+      });
 
-    // Vite middleware handles static files and transforms HTML
-    app.use(vite.middlewares);
+      const indexHtml = fs.readFileSync(path.resolve('index.html'), 'utf-8');
 
-    app.use('/api', (_req, res) => {
-      res.status(404).json({ success: false, error: 'API route not found' });
-    });
+      // Vite middleware handles static files and transforms HTML
+      app.use(vite.middlewares);
 
-    // Final SPA fallback - serve index.html for any unhandled non-API routes
-    app.use('*', async (req, res) => {
-      console.log(`[Server] SPA fallback for: ${req.path}`);
-      try {
-        const html = await vite.transformIndexHtml(req.path, indexHtml);
-        res.status(200).set({ 'Content-Type': 'text/html' }).send(html);
-      } catch (e) {
-        console.error(`[Server] Error in SPA fallback: ${e}`);
-        res.status(200).set({ 'Content-Type': 'text/html' }).send(indexHtml);
-      }
-    });
+      app.use('/api', (_req, res) => {
+        res.status(404).json({ success: false, error: 'API route not found' });
+      });
+
+      // Final SPA fallback - serve index.html for any unhandled non-API routes
+      app.use('*', async (req, res) => {
+        console.log(`[Server] SPA fallback for: ${req.path}`);
+        try {
+          const html = await vite.transformIndexHtml(req.path, indexHtml);
+          res.status(200).set({ 'Content-Type': 'text/html' }).send(html);
+        } catch (e) {
+          console.error(`[Server] Error in SPA fallback: ${e}`);
+          res.status(200).set({ 'Content-Type': 'text/html' }).send(indexHtml);
+        }
+      });
+    } catch (error) {
+      console.error('[Server] Vite middleware failed to initialize:', error);
+      app.use('/api', (_req, res) => {
+        res.status(404).json({ success: false, error: 'API route not found' });
+      });
+      app.get('*', (_req, res) => {
+        res.status(200).set({ 'Content-Type': 'text/html' }).send(fs.readFileSync(path.resolve('index.html'), 'utf-8'));
+      });
+    }
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use('/api', (_req, res) => {

@@ -1,5 +1,10 @@
 {
   "version": 2,
+  "functions": {
+    "server.ts": {
+      "runtime": "nodejs20.x"
+    }
+  },
   "builds": [
     {
       "src": "server.ts",
@@ -13,7 +18,7 @@
   ],
   "rewrites": [
     {
-      "source": "/api/:path*",
+      "source": "/api/(.*)",
       "destination": "/server"
     },
     {
