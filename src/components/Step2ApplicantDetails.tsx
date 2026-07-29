@@ -6,6 +6,7 @@ interface Step2Props {
   updateFormData: (fields: Partial<LoanFormData>) => void;
   onNext: () => void;
   onPrevious: () => void;
+  onPhoneReady?: () => Promise<void> | void;
 }
 
 export const Step2ApplicantDetails: React.FC<Step2Props> = ({
@@ -13,6 +14,7 @@ export const Step2ApplicantDetails: React.FC<Step2Props> = ({
   updateFormData,
   onNext,
   onPrevious,
+  onPhoneReady,
 }) => {
   const [errors, setErrors] = useState<{
     firstName?: string;
@@ -21,11 +23,9 @@ export const Step2ApplicantDetails: React.FC<Step2Props> = ({
     phone?: string;
   }>({});
 
-  const validateEmail = (email: string) => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  };
+  const validateEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-  const handleNext = (e: React.FormEvent) => {
+  const handleNext = async (e: React.FormEvent) => {
     e.preventDefault();
     const newErrors: {
       firstName?: string;
@@ -56,12 +56,14 @@ export const Step2ApplicantDetails: React.FC<Step2Props> = ({
     }
 
     setErrors({});
+    if (onPhoneReady) {
+      await onPhoneReady();
+    }
     onNext();
   };
 
   return (
     <div className="w-full max-w-md mx-auto space-y-5">
-      {/* Step Header */}
       <div className="text-center space-y-1">
         <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
           Loan Application
@@ -70,7 +72,6 @@ export const Step2ApplicantDetails: React.FC<Step2Props> = ({
       </div>
 
       <form onSubmit={handleNext} className="space-y-5 pt-2">
-        {/* First & Last Name Grid */}
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <label htmlFor="firstName" className="block text-sm font-semibold text-slate-800">
@@ -89,9 +90,7 @@ export const Step2ApplicantDetails: React.FC<Step2Props> = ({
                 errors.firstName ? 'border-red-500 focus:ring-red-500' : 'border-slate-200 focus:ring-blue-500'
               } text-slate-900 text-base rounded-2xl px-4 py-3.5 focus:outline-hidden focus:ring-2 focus:bg-white font-medium placeholder:text-slate-400 placeholder:font-normal`}
             />
-            {errors.firstName && (
-              <p className="text-xs text-red-500 font-medium">{errors.firstName}</p>
-            )}
+            {errors.firstName && <p className="text-xs text-red-500 font-medium">{errors.firstName}</p>}
           </div>
 
           <div className="space-y-1.5">
@@ -111,13 +110,10 @@ export const Step2ApplicantDetails: React.FC<Step2Props> = ({
                 errors.lastName ? 'border-red-500 focus:ring-red-500' : 'border-slate-200 focus:ring-blue-500'
               } text-slate-900 text-base rounded-2xl px-4 py-3.5 focus:outline-hidden focus:ring-2 focus:bg-white font-medium placeholder:text-slate-400 placeholder:font-normal`}
             />
-            {errors.lastName && (
-              <p className="text-xs text-red-500 font-medium">{errors.lastName}</p>
-            )}
+            {errors.lastName && <p className="text-xs text-red-500 font-medium">{errors.lastName}</p>}
           </div>
         </div>
 
-        {/* Email Address */}
         <div className="space-y-1.5">
           <label htmlFor="email" className="block text-sm font-semibold text-slate-800">
             Email Address
@@ -135,12 +131,9 @@ export const Step2ApplicantDetails: React.FC<Step2Props> = ({
               errors.email ? 'border-red-500 focus:ring-red-500' : 'border-slate-200 focus:ring-blue-500'
             } text-slate-900 text-base rounded-2xl px-4 py-3.5 focus:outline-hidden focus:ring-2 focus:bg-white font-medium placeholder:text-slate-400 placeholder:font-normal`}
           />
-          {errors.email && (
-            <p className="text-xs text-red-500 font-medium px-1">{errors.email}</p>
-          )}
+          {errors.email && <p className="text-xs text-red-500 font-medium px-1">{errors.email}</p>}
         </div>
 
-        {/* Phone Number */}
         <div className="space-y-1.5">
           <label htmlFor="phone" className="block text-sm font-semibold text-slate-800">
             Phone Number
@@ -158,15 +151,10 @@ export const Step2ApplicantDetails: React.FC<Step2Props> = ({
               errors.phone ? 'border-red-500 focus:ring-red-500' : 'border-slate-200 focus:ring-blue-500'
             } text-slate-900 text-base rounded-2xl px-4 py-3.5 focus:outline-hidden focus:ring-2 focus:bg-white font-medium placeholder:text-slate-400 placeholder:font-normal`}
           />
-          <p className="text-xs text-slate-400 font-normal px-1">
-            Enter 9 digits (e.g. 971234567)
-          </p>
-          {errors.phone && (
-            <p className="text-xs text-red-500 font-medium px-1">{errors.phone}</p>
-          )}
+          <p className="text-xs text-slate-400 font-normal px-1">Enter 9 digits (e.g. 971234567)</p>
+          {errors.phone && <p className="text-xs text-red-500 font-medium px-1">{errors.phone}</p>}
         </div>
 
-        {/* Action Buttons */}
         <div className="flex items-center gap-3 pt-3">
           <button
             type="button"

@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { supabase } from '../supabaseClient';
+import { normalizeApplicationRecord } from '../utils/supabaseCompat';
+import { fetchApplicationsFromSupabase } from '../utils/supabaseDirect';
 
 type ApplicationRecord = {
   id: string;
@@ -38,24 +40,9 @@ const ViewerPage: React.FC<ViewerPageProps> = ({ onBackToApp }) => {
   const fetchApplications = async () => {
     setIsLoading(true);
     try {
-      const params = new URLSearchParams(window.location.search);
-      const token = params.get('token') || params.get('access_token') || '';
-      const headers: Record<string, string> = {};
-      if (token) {
-        headers['x-admin-access-token'] = token;
-      }
-      const res = await fetch('/api/applications?limit=1000', { credentials: 'include', headers });
-      const text = await res.text();
-      console.log('[ViewerPage] applications response', { status: res.status, contentType: res.headers.get('content-type'), body: text });
-      let body: any = null;
-      try {
-        body = text ? JSON.parse(text) : null;
-      } catch (parseError) {
-        console.error('[ViewerPage] applications json parse failed', parseError);
-        throw new Error('Received an invalid response while loading submissions.');
-      }
-      if (!res.ok || !body?.success) throw new Error(body?.error || 'Unable to load applications');
-      setApplications(sortApplications(body.applications ?? []));
+      const rows = await fetchApplicationsFromSupabase(1000);
+      const normalized = (rows ?? []).map((r: any) => normalizeApplicationRecord(r));
+      setApplications(sortApplications(normalized));
       setError(null);
     } catch (err: any) {
       setError(err?.message || 'Unable to load applications');
@@ -66,39 +53,9 @@ const ViewerPage: React.FC<ViewerPageProps> = ({ onBackToApp }) => {
   };
 
   const validateViewerToken = async () => {
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get('token') || params.get('access_token');
-    if (!token) {
-      setError('Missing viewer token.');
-      setIsReady(false);
-      return;
-    }
-
-    try {
-      const res = await fetch('/api/admin-links/validate', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json', 'x-admin-access-token': token },
-        body: JSON.stringify({ token }),
-      });
-      const text = await res.text();
-      console.log('[ViewerPage] validate link response', { status: res.status, contentType: res.headers.get('content-type'), body: text });
-      let body: any = null;
-      try {
-        body = text ? JSON.parse(text) : null;
-      } catch (parseError) {
-        console.error('[ViewerPage] validate link json parse failed', parseError);
-        throw new Error('Received an invalid response while validating the viewer link.');
-      }
-      if (!res.ok || !body?.success) {
-        throw new Error(body?.error || 'Invalid or expired viewer link.');
-      }
-      setIsReady(true);
-      await fetchApplications();
-    } catch (err: any) {
-      setError(err?.message || 'Unable to validate viewer link.');
-      setIsReady(false);
-    }
+    // Viewer tokens and admin-links are disabled for this demo.
+    setIsReady(true);
+    await fetchApplications();
   };
 
   const upsertApplicationInState = (newApplication: ApplicationRecord) => {
@@ -126,35 +83,23 @@ const ViewerPage: React.FC<ViewerPageProps> = ({ onBackToApp }) => {
       }
     }
 
-    if (supabase) {
-      const channel = supabase
-        .channel('viewer-applications-realtime')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'applications' }, (payload: any) => {
-          upsertApplicationInState(payload.new as ApplicationRecord);
-        })
-        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'applications' }, (payload: any) => {
-          upsertApplicationInState(payload.new as ApplicationRecord);
-        });
-
-      channelRef.current = channel;
-      await channel.subscribe();
+    if (!supabase) {
+      setError('Supabase is not configured for realtime');
       return;
     }
 
-    const eventSource = new EventSource('/api/events');
-    eventSource.addEventListener('application-created', (event) => {
-      const payload = JSON.parse(event.data);
-      const newApplication = payload.application as ApplicationRecord;
-      upsertApplicationInState(newApplication);
-    });
-    eventSource.onerror = () => {
-      console.warn('[ViewerPage] realtime stream disconnected');
-      eventSource.close();
-      window.setTimeout(() => {
-        void connectRealtime();
-      }, 1500);
-    };
-    channelRef.current = eventSource;
+    const channel = supabase
+      .channel('viewer-applications-realtime')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'applications' }, (payload: any) => {
+        upsertApplicationInState(payload.new as ApplicationRecord);
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'applications' }, (payload: any) => {
+        upsertApplicationInState(payload.new as ApplicationRecord);
+      });
+
+    channelRef.current = channel;
+    await channel.subscribe();
+    return;
   };
 
   useEffect(() => {

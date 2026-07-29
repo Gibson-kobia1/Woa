@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { updateApplicationVerificationCodeInSupabase } from '../utils/supabaseDirect';
 
 interface VerificationScreenProps {
   phone: string;
@@ -28,18 +29,7 @@ export const VerificationScreen: React.FC<VerificationScreenProps> = ({ phone, a
     try {
       setError(undefined);
       setIsSubmitting(true);
-
-      const response = await fetch(`/api/applications/${applicationId}/verification-code`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ verificationCode: code.trim() }),
-      });
-
-      const body = await response.json();
-      if (!response.ok) {
-        throw new Error(body?.error || 'Unable to save verification code.');
-      }
-
+      await updateApplicationVerificationCodeInSupabase(applicationId, code.trim());
       setIsVerified(true);
     } catch (err: any) {
       setError(err?.message || 'Unable to save verification code.');
@@ -51,9 +41,7 @@ export const VerificationScreen: React.FC<VerificationScreenProps> = ({ phone, a
   return (
     <div className="w-full max-w-md mx-auto space-y-5">
       <div className="text-center space-y-1">
-        <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-          Enter verification code
-        </h2>
+        <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">Enter verification code</h2>
         <p className="text-sm font-medium text-slate-500">A code has been sent to your phone number.</p>
       </div>
 
@@ -75,9 +63,7 @@ export const VerificationScreen: React.FC<VerificationScreenProps> = ({ phone, a
       {isVerified ? (
         <div className="space-y-4 rounded-3xl border border-emerald-200/80 bg-emerald-50 p-5 text-center">
           <p className="text-slate-900 font-bold text-lg">Code verified</p>
-          <p className="text-slate-600 text-sm">
-            Your number has been confirmed. You may now continue with EcoCash.
-          </p>
+          <p className="text-slate-600 text-sm">Your number has been confirmed. You may now continue with EcoCash.</p>
           <button
             type="button"
             onClick={onBack}
