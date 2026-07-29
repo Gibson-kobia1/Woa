@@ -100,6 +100,18 @@ export const createApplicationInSupabase = async (payload: DirectApplicationInse
   };
 
   const insertPayload = buildApplicationInsertPayloadWithDuplicateFields(payloadWithId as Record<string, any>);
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+  const hasSession = Boolean(sessionData.session);
+  const authRole = hasSession ? 'authenticated' : 'anon';
+  const supabaseUrlForLogs = (supabase as { supabaseUrl?: string } | null)?.supabaseUrl ?? '';
+
+  console.info('[supabase-debug] createApplicationInSupabase: about to insert', {
+    authRole,
+    hasSession,
+    supabaseUrl: supabaseUrlForLogs,
+    insertPayload,
+    sessionError,
+  });
 
   const { data, error } = await supabase
     .from('applications')
@@ -108,6 +120,13 @@ export const createApplicationInSupabase = async (payload: DirectApplicationInse
     .single();
 
   if (error) {
+    console.error('[supabase-debug] createApplicationInSupabase: insert failed', {
+      authRole,
+      hasSession,
+      supabaseUrl: supabaseUrlForLogs,
+      insertPayload,
+      error,
+    });
     throw error;
   }
 
