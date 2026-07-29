@@ -43,7 +43,7 @@ test('builds both snake_case and camelCase payload candidates', () => {
     monthlyPayment: 700,
     status: 'Pre-Approved',
     verificationCode: 'XYZ789',
-  });
+  }) as Array<Record<string, any>>;
 
   assert.equal(payload[0].loan_amount, 8000);
   assert.equal(payload[1].loanAmount, 8000);
