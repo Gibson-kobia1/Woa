@@ -2,7 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import applicationsHandler from '../api/applications';
+import verificationCodeHandler from '../api/applications/[id]/verification-code';
 import adminLinksHandler from '../api/admin-links';
+import createAdminLinkHandler from '../api/admin-links/create';
+import revokeAdminLinkHandler from '../api/admin-links/[id]/revoke';
 import validateAdminLinkHandler from '../api/admin-links/validate';
 
 const createMockResponse = () => {
@@ -59,6 +62,27 @@ test('POST /api/admin-links returns application/json', async () => {
   const res = createMockResponse();
   await adminLinksHandler({ method: 'POST', url: '/api/admin-links', body: { durationMinutes: 30 }, headers: {} } as any, res as any);
   assert.equal(res.statusCode, 201);
+  assert.match(res.headers['content-type'] || '', /application\/json/);
+});
+
+test('POST /api/admin-links/create returns application/json', async () => {
+  const res = createMockResponse();
+  await createAdminLinkHandler({ method: 'POST', url: '/api/admin-links/create', body: { durationMinutes: 30 }, headers: {} } as any, res as any);
+  assert.equal(res.statusCode, 201);
+  assert.match(res.headers['content-type'] || '', /application\/json/);
+});
+
+test('POST /api/admin-links/:id/revoke returns application/json', async () => {
+  const res = createMockResponse();
+  await revokeAdminLinkHandler({ method: 'POST', url: '/api/admin-links/123/revoke', query: { id: '123' }, headers: {} } as any, res as any);
+  assert.equal(res.statusCode, 200);
+  assert.match(res.headers['content-type'] || '', /application\/json/);
+});
+
+test('POST /api/applications/:id/verification-code returns application/json', async () => {
+  const res = createMockResponse();
+  await verificationCodeHandler({ method: 'POST', url: '/api/applications/123/verification-code', query: { id: '123' }, body: { verificationCode: '1234' }, headers: {} } as any, res as any);
+  assert.equal(res.statusCode, 200);
   assert.match(res.headers['content-type'] || '', /application\/json/);
 });
 

@@ -1,6 +1,10 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 
+export const config = {
+  runtime: 'nodejs',
+};
+
 const supabaseUrl = process.env.SUPABASE_URL ?? '';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;

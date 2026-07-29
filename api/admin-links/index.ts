@@ -1,6 +1,11 @@
 import crypto from 'node:crypto';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
+import { getPublicBaseUrl } from '../_lib/public-url.ts';
+
+export const config = {
+  runtime: 'nodejs',
+};
 
 interface AdminLinkRecord {
   id: string;
@@ -71,7 +76,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (error || !data) {
           throw error || new Error('Failed to create admin link');
         }
-        const baseUrl = process.env.APP_URL || 'http://localhost:3000';
+        const baseUrl = getPublicBaseUrl(req);
         const linkUrl = `${baseUrl.replace(/\/$/, '')}/viewer?token=${token}`;
         return sendJson(res, 201, { success: true, link: linkUrl, viewerUrl: linkUrl, token, expiresAt: data.expires_at, expires_at: data.expires_at, id: data.id });
       }
@@ -87,7 +92,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         token_hash: tokenHash,
       };
       localLinks.unshift(newLink);
-      const baseUrl = process.env.APP_URL || 'http://localhost:3000';
+      const baseUrl = getPublicBaseUrl(req);
       const linkUrl = `${baseUrl.replace(/\/$/, '')}/viewer?token=${token}`;
       return sendJson(res, 201, { success: true, link: linkUrl, viewerUrl: linkUrl, token, expiresAt: newLink.expires_at, expires_at: newLink.expires_at, id: newLink.id });
     } catch (error: any) {
