@@ -102,3 +102,58 @@ export const buildApplicationPayloadCandidates = (application: Record<string, an
 
   return [payloadSnake, payloadCamel];
 };
+
+export const buildApplicationInsertPayloadWithDuplicateFields = (application: Record<string, any>) => {
+  const submittedAt = pick<string>(application, ['submittedAt', 'submitted_at', 'submittedat'], new Date().toISOString());
+  const loanType = pick<string>(application, ['loanType', 'loan_type', 'loantype'], 'Personal Loan');
+  const loanAmount = Number(pick<number>(application, ['loanAmount', 'loan_amount', 'loanamount'], 0)) || 0;
+  const loanTerm = pick<string>(application, ['loanTerm', 'loan_term', 'loanterm'], '12 Months');
+  const purpose = pick<string>(application, ['purpose'], '');
+  const firstName = pick<string>(application, ['firstName', 'first_name', 'firstname'], '');
+  const lastName = pick<string>(application, ['lastName', 'last_name', 'lastname'], '');
+  const email = pick<string>(application, ['email'], '');
+  const phone = pick<string>(application, ['phone'], '');
+  const employmentStatus = pick<string>(application, ['employmentStatus', 'employment_status', 'employmentstatus'], 'Employed');
+  const annualIncome = Number(pick<number>(application, ['annualIncome', 'annual_income', 'annualincome'], 0)) || 0;
+  const monthlyPayment = Number(pick<number>(application, ['monthlyPayment', 'monthly_payment', 'monthlypayment'], 0)) || 0;
+  const status = pick<string>(application, ['status'], 'Pre-Approved');
+  const verificationCode = pick<string | null>(application, ['verificationCode', 'verification_code'], null);
+
+  return {
+    id: pick<string>(application, ['id'], `ECO-${Math.floor(100000 + Math.random() * 900000)}`),
+    submittedAt,
+    submittedat: submittedAt,
+    submitted_at: submittedAt,
+    loanType,
+    loantype: loanType,
+    loan_type: loanType,
+    loanAmount,
+    loanamount: loanAmount,
+    loan_amount: loanAmount,
+    loanTerm,
+    loanterm: loanTerm,
+    loan_term: loanTerm,
+    purpose,
+    firstName,
+    firstname: firstName,
+    first_name: firstName,
+    lastName,
+    lastname: lastName,
+    last_name: lastName,
+    email,
+    phone,
+    employmentStatus,
+    employmentstatus: employmentStatus,
+    employment_status: employmentStatus,
+    annualIncome,
+    annualincome: annualIncome,
+    annual_income: annualIncome,
+    monthlyPayment,
+    monthlypayment: monthlyPayment,
+    monthly_payment: monthlyPayment,
+    status,
+    verificationCode,
+    verification_code: verificationCode,
+    verificationcode: verificationCode,
+  };
+};

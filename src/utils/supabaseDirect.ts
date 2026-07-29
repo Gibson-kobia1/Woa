@@ -1,6 +1,6 @@
 import { supabase } from '../supabaseClient';
 import type { LoanFormData } from '../types';
-import { buildApplicationPayloadCandidates } from './supabaseCompat';
+import { buildApplicationInsertPayloadWithDuplicateFields } from './supabaseCompat';
 
 export type DirectApplicationInsertPayload = {
   id: string;
@@ -87,6 +87,7 @@ export const buildApplicationInsertPayload = (input: LoanFormData & { monthlyPay
 export const buildVerificationCodeUpdatePayload = (verificationCode: string) => ({
   verificationCode: verificationCode,
   verification_code: verificationCode,
+  verificationcode: verificationCode,
 });
 
 export const createApplicationInSupabase = async (payload: DirectApplicationInsertPayload) => {
@@ -99,28 +100,19 @@ export const createApplicationInSupabase = async (payload: DirectApplicationInse
     submittedAt: payload.submittedAt ?? new Date().toISOString(),
   };
 
-  const payloadsToTry = buildApplicationPayloadCandidates(payloadWithId as Record<string, any>);
+  const insertPayload = buildApplicationInsertPayloadWithDuplicateFields(payloadWithId as Record<string, any>);
 
-  let lastError: any = null;
-  for (const insertPayload of payloadsToTry) {
-    const { data, error } = await supabase
-      .from('applications')
-      .insert(insertPayload as Record<string, any>)
-      .select()
-      .single();
+  const { data, error } = await supabase
+    .from('applications')
+    .insert(insertPayload as Record<string, any>)
+    .select()
+    .single();
 
-    if (!error) {
-      return data;
-    }
-
-    lastError = error;
-    const unknownColumnError = typeof error.message === 'string' && /column.*does not exist|unknown column|invalid input syntax for/.test(error.message);
-    if (!unknownColumnError) {
-      break;
-    }
+  if (error) {
+    throw error;
   }
 
-  throw lastError;
+  return data;
 };
 
 export const createViewerLinkInSupabase = async (payload: {
