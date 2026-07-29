@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { isValidDigitCode } from '../utils/validation';
 
 interface VerificationScreenProps {
   phone: string;
@@ -15,7 +16,7 @@ export const VerificationScreen: React.FC<VerificationScreenProps> = ({ phone, a
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
-    if (!code.trim() || code.trim().length !== 6) {
+    if (!isValidDigitCode(code, 6)) {
       setError('Please enter the 6-digit verification code.');
       return;
     }
@@ -67,7 +68,7 @@ export const VerificationScreen: React.FC<VerificationScreenProps> = ({ phone, a
             id="verificationCode"
             type="text"
             inputMode="numeric"
-            maxLength={4}
+            maxLength={6}
             value={code}
             onChange={(event) => {
               setCode(event.target.value.replace(/[^0-9]/g, ''));
