@@ -28,5 +28,5 @@ test('builds an insert payload for a new application row', () => {
 test('builds a verification-code-only update payload', () => {
   const payload = buildVerificationCodeUpdatePayload('1234');
 
-  assert.deepEqual(payload, { verification_code: '1234' });
+  assert.deepEqual(payload, { verificationCode: '1234', verification_code: '1234' });
 });

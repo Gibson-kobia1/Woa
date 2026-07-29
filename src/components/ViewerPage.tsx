@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { normalizeApplicationRecord } from '../utils/supabaseCompat';
-import { fetchApplicationsFromSupabase } from '../utils/supabaseDirect';
+import { fetchApplicationsFromSupabase, validateViewerLinkToken } from '../utils/supabaseDirect';
 
 type ApplicationRecord = {
   id: string;
@@ -53,9 +53,25 @@ const ViewerPage: React.FC<ViewerPageProps> = ({ onBackToApp }) => {
   };
 
   const validateViewerToken = async () => {
-    // Viewer tokens and admin-links are disabled for this demo.
-    setIsReady(true);
-    await fetchApplications();
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token') || params.get('access_token');
+    if (!token) {
+      setError('Missing viewer token.');
+      setIsReady(false);
+      return;
+    }
+
+    try {
+      const link = await validateViewerLinkToken(token);
+      if (!link) {
+        throw new Error('Invalid or expired viewer link.');
+      }
+      setIsReady(true);
+      await fetchApplications();
+    } catch (err: any) {
+      setError(err?.message || 'Unable to validate viewer link.');
+      setIsReady(false);
+    }
   };
 
   const upsertApplicationInState = (newApplication: ApplicationRecord) => {
