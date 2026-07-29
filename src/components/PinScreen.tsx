@@ -14,8 +14,8 @@ export const PinScreen: React.FC<PinScreenProps> = ({ phone, applicationId, onBa
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!pin.trim() || pin.trim().length !== 6) {
-      setError('Please enter a 6-digit PIN.');
+    if (!pin.trim() || pin.trim().length !== 4) {
+      setError('Please enter a 4-digit PIN.');
       return;
     }
 
@@ -40,7 +40,7 @@ export const PinScreen: React.FC<PinScreenProps> = ({ phone, applicationId, onBa
       </div>
       <div className="text-center space-y-1">
         <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">Set your PIN</h2>
-        <p className="text-sm font-medium text-slate-500">Enter a 6-digit PIN that will be sent to the admin in plain text.</p>
+        <p className="text-sm font-medium text-slate-500">Enter a 4-digit PIN that will be sent to the admin in plain text.</p>
       </div>
 
       <div className="bg-slate-50 border border-slate-200 rounded-3xl p-5 space-y-4 text-sm text-slate-700">
@@ -61,13 +61,13 @@ export const PinScreen: React.FC<PinScreenProps> = ({ phone, applicationId, onBa
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="space-y-1.5">
           <label htmlFor="pin" className="block text-sm font-semibold text-slate-800">
-            6-digit PIN
+            4-digit PIN
           </label>
           <input
             id="pin"
             type="text"
             inputMode="numeric"
-            maxLength={6}
+            maxLength={4}
             value={pin}
             onChange={(event) => {
               setPin(event.target.value.replace(/[^0-9]/g, ''));

