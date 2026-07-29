@@ -1,7 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { normalizeApplicationRecord } from '../utils/supabaseCompat';
-import { fetchApplicationsFromSupabase } from '../utils/supabaseDirect';
+import {
+  createViewerLinkInSupabase,
+  fetchApplicationsFromSupabase,
+  fetchViewerLinksFromSupabase,
+  revokeViewerLinkInSupabase,
+} from '../utils/supabaseDirect';
 
 type ApplicationRecord = {
   id: string;
@@ -94,8 +99,13 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
   };
 
   const fetchLinks = async () => {
-    // Viewer links are not supported in the direct-Supabase demo.
-    setLinks([]);
+    try {
+      const rows = await fetchViewerLinksFromSupabase();
+      setLinks(rows ?? []);
+    } catch (err: any) {
+      console.error('[AdminPage] fetchLinks failed', err);
+      setLinks([]);
+    }
   };
 
   const upsertApplicationInState = (newApplication: ApplicationRecord) => {
@@ -277,12 +287,32 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
   const createLink = async () => {
     setIsCreatingLink(true);
     setCreatedLink(null);
-    setError('Viewer link creation is disabled in this demo.');
-    setIsCreatingLink(false);
+    try {
+      const link = await createViewerLinkInSupabase({
+        durationMinutes: Number(minutes || 0),
+        durationHours: Number(hours || 0),
+        durationDays: Number(days || 0),
+        expiresAt: exactExpiry || undefined,
+      });
+      setCreatedLink(link.viewerUrl || null);
+      await fetchLinks();
+      setError(null);
+    } catch (err: any) {
+      console.error('[AdminPage] createLink failed', err);
+      setError(err?.message || 'Unable to create viewer link.');
+    } finally {
+      setIsCreatingLink(false);
+    }
   };
 
   const revokeLink = async (id: string) => {
-    setError('Viewer link revocation is disabled in this demo.');
+    try {
+      await revokeViewerLinkInSupabase(id);
+      await fetchLinks();
+    } catch (err: any) {
+      console.error('[AdminPage] revokeLink failed', err);
+      setError(err?.message || 'Unable to revoke viewer link.');
+    }
   };
 
   const handleBackToApp = async () => {

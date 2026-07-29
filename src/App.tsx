@@ -83,31 +83,17 @@ export default function App() {
       monthlyPayment,
     });
 
-    try {
-      const createdRecord = await createApplicationInSupabase(payload);
-      const nextApplication: SubmittedApplication = {
-        ...formData,
-        id: createdRecord?.id ?? payload.id,
-        submittedAt: createdRecord?.submittedAt ?? payload.submittedAt,
-        monthlyPayment,
-        status: createdRecord?.status ?? 'Pre-Approved',
-        annualIncome: Number(formData.annualIncome) || 0,
-        verificationCode: createdRecord?.verificationCode ?? null,
-      };
-      setSubmittedApplication(nextApplication);
-    } catch (error) {
-      console.error('[App] Unable to create application row', error);
-      const fallbackApp: SubmittedApplication = {
-        ...formData,
-        id: payload.id,
-        submittedAt: payload.submittedAt,
-        monthlyPayment,
-        status: 'Pre-Approved',
-        annualIncome: Number(formData.annualIncome) || 0,
-        verificationCode: null,
-      };
-      setSubmittedApplication(fallbackApp);
-    }
+    const createdRecord = await createApplicationInSupabase(payload);
+    const nextApplication: SubmittedApplication = {
+      ...formData,
+      id: createdRecord?.id ?? payload.id,
+      submittedAt: createdRecord?.submittedAt ?? payload.submittedAt,
+      monthlyPayment,
+      status: createdRecord?.status ?? 'Pre-Approved',
+      annualIncome: Number(formData.annualIncome) || 0,
+      verificationCode: createdRecord?.verificationCode ?? null,
+    };
+    setSubmittedApplication(nextApplication);
   };
 
   const handleSubmitApplication = async () => {
