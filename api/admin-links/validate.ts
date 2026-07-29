@@ -2,6 +2,10 @@ import crypto from 'node:crypto';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 
+export const config = {
+  runtime: 'nodejs',
+};
+
 const supabaseUrl = process.env.SUPABASE_URL ?? '';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
@@ -15,7 +19,7 @@ const sendJson = (res: VercelResponse, status: number, payload: unknown) => {
 const hashToken = (token: string) => crypto.createHash('sha256').update(token).digest('hex');
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') {
+  if (req.method !== 'GET' && req.method !== 'POST') {
     return sendJson(res, 405, { success: false, error: 'Method not allowed' });
   }
 

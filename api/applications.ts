@@ -1,7 +1,11 @@
 import crypto from 'node:crypto';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { buildApplicationPayloadCandidates, normalizeApplicationRecord } from '../src/utils/supabaseCompat.js';
+import { buildApplicationPayloadCandidates, normalizeApplicationRecord } from '../src/utils/supabaseCompat.ts';
+
+export const config = {
+  runtime: 'nodejs',
+};
 
 interface LoanApplication {
   id: string;
@@ -56,6 +60,7 @@ const getApplicationPayload = (data: Record<string, any>): LoanApplication => {
 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
   if (req.method === 'GET') {
     const limit = Number(req.query.limit) || 20;
     const rowLimit = Math.min(Math.max(limit, 1), 100);
