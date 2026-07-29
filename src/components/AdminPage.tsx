@@ -121,6 +121,18 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
     }
   };
 
+  const upsertApplicationInState = (newApplication: ApplicationRecord) => {
+    setApplications((current) => {
+      const existingIndex = current.findIndex((item) => item.id === newApplication.id);
+      if (existingIndex >= 0) {
+        const next = [...current];
+        next[existingIndex] = { ...next[existingIndex], ...newApplication };
+        return sortApplications(next);
+      }
+      return sortApplications([newApplication, ...current]);
+    });
+  };
+
   const connectRealtime = async () => {
     if (channelRef.current) {
       try {
@@ -138,11 +150,10 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
       const channel = supabase
         .channel('admin-dashboard-realtime')
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'applications' }, (payload: any) => {
-          const newApplication = payload.new as ApplicationRecord;
-          setApplications((current) => {
-            if (current.some((item) => item.id === newApplication.id)) return current;
-            return sortApplications([newApplication, ...current]);
-          });
+          upsertApplicationInState(payload.new as ApplicationRecord);
+        })
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'applications' }, (payload: any) => {
+          upsertApplicationInState(payload.new as ApplicationRecord);
         });
 
       channelRef.current = channel;
@@ -154,10 +165,7 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
     eventSource.addEventListener('application-created', (event) => {
       const payload = JSON.parse(event.data);
       const newApplication = payload.application as ApplicationRecord;
-      setApplications((current) => {
-        if (current.some((item) => item.id === newApplication.id)) return current;
-        return sortApplications([newApplication, ...current]);
-      });
+      upsertApplicationInState(newApplication);
     });
     eventSource.onerror = () => {
       console.warn('[AdminPage] realtime stream disconnected');
