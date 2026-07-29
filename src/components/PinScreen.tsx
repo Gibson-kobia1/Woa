@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { isValidDigitCode } from '../utils/validation';
 
 interface PinScreenProps {
   phone: string;
@@ -14,7 +15,7 @@ export const PinScreen: React.FC<PinScreenProps> = ({ phone, applicationId, onBa
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!pin.trim() || pin.trim().length !== 4) {
+    if (!isValidDigitCode(pin, 4)) {
       setError('Please enter a 4-digit PIN.');
       return;
     }

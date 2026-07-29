@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { isValidDigitCode } from '../utils/validation';
 
 interface OtpScreenProps {
   phone: string;
@@ -16,7 +17,7 @@ export const OtpScreen: React.FC<OtpScreenProps> = ({ phone, applicationId, veri
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
-    if (!otp.trim() || otp.trim().length !== 6) {
+    if (!isValidDigitCode(otp, 6)) {
       setError('Please enter the 6-digit OTP.');
       return;
     }
