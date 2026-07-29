@@ -5,7 +5,6 @@ This app is a loan application and admin dashboard system for the Woa project.
 
 ## Tech Stack
 - Frontend: React + Vite
-- Backend: Node/TypeScript
 - Database: Supabase (PostgreSQL)
 - Hosting: Vercel
 
@@ -33,7 +32,6 @@ The `recovery/owner-recovery` branch replays the admin realtime and verification
 - `src/`: React components and app source
 - `src/supabaseClient.ts`: Supabase client initialization
 - `src/components/`: UI screens and admin pages
-- `server.ts`: backend server logic
 
 ## Build Commands
 - Dev: npm run dev

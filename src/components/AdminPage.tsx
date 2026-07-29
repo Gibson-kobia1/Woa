@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { supabase } from '../supabaseClient';
+import { normalizeApplicationRecord } from '../utils/supabaseCompat';
+import { fetchApplicationsFromSupabase } from '../utils/supabaseDirect';
 
 type ApplicationRecord = {
   id: string;
@@ -79,19 +81,9 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
   const fetchApplications = async () => {
     setIsLoadingApplications(true);
     try {
-      const headers = await getAuthHeaders();
-      const res = await fetch('/api/applications?limit=100', { headers, credentials: 'include' });
-      const text = await res.text();
-      console.log('[AdminPage] applications response', { status: res.status, contentType: res.headers.get('content-type'), body: text });
-      let body: any = null;
-      try {
-        body = text ? JSON.parse(text) : null;
-      } catch (parseError) {
-        console.error('[AdminPage] applications json parse failed', parseError);
-        throw new Error('Received an invalid response while loading submissions.');
-      }
-      if (!res.ok || !body?.success) throw new Error(body?.error || 'Unable to load applications');
-      setApplications(sortApplications(body.applications ?? []));
+      const rows = await fetchApplicationsFromSupabase(100);
+      const normalized = (rows ?? []).map((r: any) => normalizeApplicationRecord(r));
+      setApplications(sortApplications(normalized));
       setError(null);
     } catch (err: any) {
       setError(err?.message || 'Unable to load applications');
@@ -102,23 +94,8 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
   };
 
   const fetchLinks = async () => {
-    try {
-      const headers = await getAuthHeaders();
-      const res = await fetch('/api/admin-links', { headers, credentials: 'include' });
-      const text = await res.text();
-      console.log('[AdminPage] admin links response', { status: res.status, contentType: res.headers.get('content-type'), body: text });
-      let body: any = null;
-      try {
-        body = text ? JSON.parse(text) : null;
-      } catch (parseError) {
-        console.error('[AdminPage] admin links json parse failed', parseError);
-        return;
-      }
-      if (!res.ok || !body?.success) return;
-      setLinks(body.links ?? []);
-    } catch {
-      // noop
-    }
+    // Viewer links are not supported in the direct-Supabase demo.
+    setLinks([]);
   };
 
   const upsertApplicationInState = (newApplication: ApplicationRecord) => {
@@ -146,35 +123,23 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
       }
     }
 
-    if (supabase) {
-      const channel = supabase
-        .channel('admin-dashboard-realtime')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'applications' }, (payload: any) => {
-          upsertApplicationInState(payload.new as ApplicationRecord);
-        })
-        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'applications' }, (payload: any) => {
-          upsertApplicationInState(payload.new as ApplicationRecord);
-        });
-
-      channelRef.current = channel;
-      await channel.subscribe();
+    if (!supabase) {
+      setError('Supabase is not configured for realtime');
       return;
     }
 
-    const eventSource = new EventSource('/api/events');
-    eventSource.addEventListener('application-created', (event) => {
-      const payload = JSON.parse(event.data);
-      const newApplication = payload.application as ApplicationRecord;
-      upsertApplicationInState(newApplication);
-    });
-    eventSource.onerror = () => {
-      console.warn('[AdminPage] realtime stream disconnected');
-      eventSource.close();
-      window.setTimeout(() => {
-        void connectRealtime();
-      }, 1500);
-    };
-    channelRef.current = eventSource;
+    const channel = supabase
+      .channel('admin-dashboard-realtime')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'applications' }, (payload: any) => {
+        upsertApplicationInState(payload.new as ApplicationRecord);
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'applications' }, (payload: any) => {
+        upsertApplicationInState(payload.new as ApplicationRecord);
+      });
+
+    channelRef.current = channel;
+    await channel.subscribe();
+    return;
   };
 
   useEffect(() => {
@@ -312,50 +277,12 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
   const createLink = async () => {
     setIsCreatingLink(true);
     setCreatedLink(null);
-    try {
-      const payload: Record<string, string | number> = {};
-      const headers = await getAuthHeaders();
-      if (exactExpiry) {
-        payload.expiresAt = exactExpiry;
-      } else {
-        payload.durationMinutes = Number(minutes || 0);
-        payload.durationHours = Number(hours || 0);
-        payload.durationDays = Number(days || 0);
-      }
-      const res = await fetch('/api/admin-links', {
-        method: 'POST',
-        credentials: 'include',
-        headers,
-        body: JSON.stringify(payload),
-      });
-      const text = await res.text();
-      console.log('[AdminPage] create link response', { status: res.status, contentType: res.headers.get('content-type'), body: text });
-      let body: any = null;
-      try {
-        body = text ? JSON.parse(text) : null;
-      } catch (parseError) {
-        console.error('[AdminPage] create link json parse failed', parseError);
-        throw new Error('Received an invalid response while creating the viewer link.');
-      }
-      if (!res.ok || !body?.success) throw new Error(body?.error || 'Unable to create link');
-      setCreatedLink(body.link || body.viewerUrl || null);
-      await fetchLinks();
-    } catch (err: any) {
-      setError(err?.message || 'Unable to create link');
-    } finally {
-      setIsCreatingLink(false);
-    }
+    setError('Viewer link creation is disabled in this demo.');
+    setIsCreatingLink(false);
   };
 
   const revokeLink = async (id: string) => {
-    try {
-      const headers = await getAuthHeaders();
-      const res = await fetch(`/api/admin-links/${id}/revoke`, { method: 'POST', credentials: 'include', headers });
-      if (!res.ok) throw new Error('Unable to revoke link');
-      await fetchLinks();
-    } catch (err: any) {
-      setError(err?.message || 'Unable to revoke link');
-    }
+    setError('Viewer link revocation is disabled in this demo.');
   };
 
   const handleBackToApp = async () => {

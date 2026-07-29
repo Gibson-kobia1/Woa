@@ -1,6 +1,6 @@
 # EcoCash Loan Application Dashboard
 
-This repo contains a React + Vite SPA for loan applications plus an Express backend for API and admin support.
+This repo contains a React + Vite SPA for loan applications that communicates directly with Supabase (no backend API required for the demo).
 
 ## Local development
 
@@ -41,7 +41,6 @@ Once validated, the admin dashboard supports:
    - `APP_URL`
 2. Build and deploy.
 
-## Routing fix for `/admin`
+## Routing for `/admin`
 
-This SPA uses an Express server with a final fallback route to serve `index.html` for non-API paths.
-`vercel.json` also rewrites non-API routes to `index.html` in production.
+This SPA relies on client-side routing; server-side API routes have been removed for the demo. `vercel.json` routes non-asset paths to `index.html`.
