@@ -87,7 +87,6 @@ export const buildApplicationInsertPayload = (input: LoanFormData & { monthlyPay
 export const buildVerificationCodeUpdatePayload = (verificationCode: string) => ({
   verificationCode: verificationCode,
   verification_code: verificationCode,
-  verificationcode: verificationCode,
 });
 
 export const createApplicationInSupabase = async (payload: DirectApplicationInsertPayload) => {

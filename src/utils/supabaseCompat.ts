@@ -154,6 +154,5 @@ export const buildApplicationInsertPayloadWithDuplicateFields = (application: Re
     status,
     verificationCode,
     verification_code: verificationCode,
-    verificationcode: verificationCode,
   };
 };
