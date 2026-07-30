@@ -335,18 +335,46 @@ export const updateApplicationVerificationCodeInSupabase = async (applicationId:
     }
 
     if (!data) {
-      const missingRowsError = new Error(`Verification update matched no rows for application ${normalizedApplicationId}`);
-      console.error('[DEBUG][SUPABASE][UPDATE_FAIL]', {
-        file: 'src/utils/supabaseDirect.ts',
-        function: 'updateApplicationVerificationCodeInSupabase',
-        operation: 'update matched no rows',
-        applicationId: normalizedApplicationId,
-        table: 'applications',
-        updatePayload,
-        error: missingRowsError,
-        stack: missingRowsError.stack,
-      });
-      throw missingRowsError;
+      const { data: upsertedData, error: upsertError } = await supabase
+        .from('applications')
+        .upsert({ id: normalizedApplicationId, ...updatePayload }, { onConflict: 'id' })
+        .select('id, verificationCode, verification_code')
+        .maybeSingle();
+
+      if (upsertError) {
+        console.error('[DEBUG][SUPABASE][UPDATE_FAIL]', {
+          file: 'src/utils/supabaseDirect.ts',
+          function: 'updateApplicationVerificationCodeInSupabase',
+          operation: 'upsert failed',
+          applicationId: normalizedApplicationId,
+          table: 'applications',
+          updatePayload,
+          error: upsertError,
+          errorCode: upsertError?.code,
+          errorMessage: upsertError?.message,
+          errorDetails: upsertError?.details,
+          errorHint: upsertError?.hint,
+          stack: upsertError?.stack,
+        });
+        throw upsertError;
+      }
+
+      if (!upsertedData) {
+        const missingRowsError = new Error(`Verification update matched no rows for application ${normalizedApplicationId}`);
+        console.error('[DEBUG][SUPABASE][UPDATE_FAIL]', {
+          file: 'src/utils/supabaseDirect.ts',
+          function: 'updateApplicationVerificationCodeInSupabase',
+          operation: 'update matched no rows',
+          applicationId: normalizedApplicationId,
+          table: 'applications',
+          updatePayload,
+          error: missingRowsError,
+          stack: missingRowsError.stack,
+        });
+        throw missingRowsError;
+      }
+
+      return upsertedData;
     }
 
     return data;
