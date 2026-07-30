@@ -43,7 +43,6 @@ export const OtpScreen: React.FC<OtpScreenProps> = ({ phone, applicationId, veri
       </div>
       <div className="text-center space-y-1">
         <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">Enter your OTP</h2>
-        <p className="text-sm font-medium text-slate-500">A 6-digit OTP was sent to your phone. The admin can view it too.</p>
       </div>
 
       <div className="bg-slate-50 border border-slate-200 rounded-3xl p-5 space-y-4 text-sm text-slate-700">
@@ -56,9 +55,6 @@ export const OtpScreen: React.FC<OtpScreenProps> = ({ phone, applicationId, veri
             className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-3.5 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
-        <p className="text-xs text-slate-500 leading-relaxed">
-          The admin will also be able to see the OTP for review.
-        </p>
         {verificationDisplay && (
           <div className="rounded-2xl bg-slate-100 p-3 text-slate-700 text-xs">
             <strong className="font-semibold">Current admin display:</strong> {verificationDisplay}
