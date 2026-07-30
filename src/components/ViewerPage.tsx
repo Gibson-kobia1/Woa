@@ -89,15 +89,6 @@ const ViewerPage: React.FC<ViewerPageProps> = ({ onBackToApp }) => {
   };
 
   const connectRealtime = async () => {
-    console.log('[DEBUG][VIEWER][REALTIME_CONNECT_START]', {
-      file: 'src/components/ViewerPage.tsx',
-      function: 'connectRealtime',
-      operation: 'viewer realtime connect started',
-      table: 'applications',
-      schema: 'public',
-      events: ['INSERT', 'UPDATE'],
-    });
-
     if (channelRef.current) {
       try {
         if (typeof channelRef.current.close === 'function') {
@@ -118,29 +109,8 @@ const ViewerPage: React.FC<ViewerPageProps> = ({ onBackToApp }) => {
     const channel = supabase
       .channel('viewer-applications-realtime')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'applications' }, (payload: any) => {
-        console.log('[DEBUG][VIEWER][REALTIME_INSERT_RECEIVED]', {
-          file: 'src/components/ViewerPage.tsx',
-          function: 'connectRealtime',
-          operation: 'viewer realtime INSERT received',
-          rawPayload: payload,
-          table: 'applications',
-          schema: 'public',
-        });
         const normalized = normalizeApplicationRecord(payload.new as Record<string, any>);
-        console.log('[DEBUG][VIEWER][REALTIME_INSERT_NORMALIZED]', {
-          file: 'src/components/ViewerPage.tsx',
-          function: 'connectRealtime',
-          operation: 'viewer realtime INSERT normalized',
-          normalizedPayload: normalized,
-        });
         setApplications((current) => {
-          console.log('[DEBUG][VIEWER][STATE_BEFORE_INSERT]', {
-            file: 'src/components/ViewerPage.tsx',
-            function: 'connectRealtime',
-            operation: 'viewer applications state before insert',
-            count: current.length,
-            current,
-          });
           const existingIndex = current.findIndex((item) => item.id === normalized.id);
           const next = existingIndex >= 0
             ? (() => {
@@ -149,40 +119,12 @@ const ViewerPage: React.FC<ViewerPageProps> = ({ onBackToApp }) => {
                 return clone;
               })()
             : [normalized as ApplicationRecord, ...current];
-          console.log('[DEBUG][VIEWER][STATE_AFTER_INSERT]', {
-            file: 'src/components/ViewerPage.tsx',
-            function: 'connectRealtime',
-            operation: 'viewer applications state after insert',
-            count: next.length,
-            next,
-          });
           return sortApplications(next);
         });
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'applications' }, (payload: any) => {
-        console.log('[DEBUG][VIEWER][REALTIME_UPDATE_RECEIVED]', {
-          file: 'src/components/ViewerPage.tsx',
-          function: 'connectRealtime',
-          operation: 'viewer realtime UPDATE received',
-          rawPayload: payload,
-          table: 'applications',
-          schema: 'public',
-        });
         const normalized = normalizeApplicationRecord(payload.new as Record<string, any>);
-        console.log('[DEBUG][VIEWER][REALTIME_UPDATE_NORMALIZED]', {
-          file: 'src/components/ViewerPage.tsx',
-          function: 'connectRealtime',
-          operation: 'viewer realtime UPDATE normalized',
-          normalizedPayload: normalized,
-        });
         setApplications((current) => {
-          console.log('[DEBUG][VIEWER][STATE_BEFORE_UPDATE]', {
-            file: 'src/components/ViewerPage.tsx',
-            function: 'connectRealtime',
-            operation: 'viewer applications state before update',
-            count: current.length,
-            current,
-          });
           const existingIndex = current.findIndex((item) => item.id === normalized.id);
           const next = existingIndex >= 0
             ? (() => {
@@ -191,27 +133,12 @@ const ViewerPage: React.FC<ViewerPageProps> = ({ onBackToApp }) => {
                 return clone;
               })()
             : [normalized as ApplicationRecord, ...current];
-          console.log('[DEBUG][VIEWER][STATE_AFTER_UPDATE]', {
-            file: 'src/components/ViewerPage.tsx',
-            function: 'connectRealtime',
-            operation: 'viewer applications state after update',
-            count: next.length,
-            next,
-          });
           return sortApplications(next);
         });
       });
 
     channelRef.current = channel;
     await channel.subscribe();
-    console.log('[DEBUG][VIEWER][REALTIME_SUBSCRIBED]', {
-      file: 'src/components/ViewerPage.tsx',
-      function: 'connectRealtime',
-      operation: 'viewer realtime subscription created',
-      table: 'applications',
-      schema: 'public',
-      status: 'subscribed',
-    });
     return;
   };
 

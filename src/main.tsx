@@ -29,12 +29,9 @@ window.addEventListener('unhandledrejection', (event) => {
   }
 });
 
-console.log('[Main] App initialization started');
-
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />
   </StrictMode>,
 );
 
-console.log('[Main] App rendered successfully');

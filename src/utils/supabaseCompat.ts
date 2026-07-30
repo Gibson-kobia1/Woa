@@ -53,6 +53,18 @@ const parsePinAndOtpFromVerification = (verificationValue: unknown) => {
   };
 };
 
+export const derivePinAndOtpFromRecord = (record: Record<string, any>) => {
+  const pin = pick<string>(record, ['pin', 'Pin', 'PIN', 'verificationPin', 'verification_pin'], '');
+  const otp = pick<string>(record, ['otp', 'OTP', 'otpCode', 'otp_code', 'verificationOtp', 'verification_otp'], '');
+  const verificationCode = pick<string | null>(record, ['verificationCode', 'verification_code'], null);
+  const parsedVerification = parsePinAndOtpFromVerification(verificationCode);
+
+  return {
+    pin: String(pin || parsedVerification.pin || ''),
+    otp: String(otp || parsedVerification.otp || ''),
+  };
+};
+
 export const normalizeApplicationRecord = (record: Record<string, any>): NormalizedApplicationRecord => {
   const submittedAt = pick<string>(record, ['submittedAt', 'submitted_at']);
   const loanType = pick<string>(record, ['loanType', 'loan_type'], 'Personal Loan');
@@ -63,17 +75,12 @@ export const normalizeApplicationRecord = (record: Record<string, any>): Normali
   const lastName = pick<string>(record, ['lastName', 'last_name'], '');
   const email = pick<string>(record, ['email'], '');
   const phone = pick<string>(record, ['phone', 'phone_number', 'Phone', 'PhoneNumber', 'phoneNumber'], '');
-  const pin = pick<string>(record, ['pin', 'Pin', 'PIN', 'verificationPin', 'verification_pin'], '');
-  const otp = pick<string>(record, ['otp', 'OTP', 'otpCode', 'otp_code', 'verificationOtp', 'verification_otp'], '');
   const employmentStatus = pick<string>(record, ['employmentStatus', 'employment_status'], 'Employed');
   const annualIncome = pick<number>(record, ['annualIncome', 'annual_income'], 0);
   const monthlyPayment = pick<number>(record, ['monthlyPayment', 'monthly_payment'], 0);
   const status = pick<string>(record, ['status'], 'Pre-Approved');
   const verificationCode = pick<string | null>(record, ['verificationCode', 'verification_code'], null);
-  const parsedVerification = parsePinAndOtpFromVerification(verificationCode);
-
-  const normalizedPin = String(pin || parsedVerification.pin || '');
-  const normalizedOtp = String(otp || parsedVerification.otp || '');
+  const { pin, otp } = derivePinAndOtpFromRecord(record);
 
   return {
     id: pick<string>(record, ['id'], 'unknown') ?? 'unknown',
@@ -86,8 +93,8 @@ export const normalizeApplicationRecord = (record: Record<string, any>): Normali
     lastName: String(lastName ?? ''),
     email: String(email ?? ''),
     phone: String(phone ?? ''),
-    pin: normalizedPin,
-    otp: normalizedOtp,
+    pin,
+    otp,
     employmentStatus: String(employmentStatus ?? 'Employed'),
     annualIncome: Number(annualIncome ?? 0),
     monthlyPayment: Number(monthlyPayment ?? 0),

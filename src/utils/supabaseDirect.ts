@@ -116,37 +116,10 @@ export const createApplicationInSupabase = async (payload: DirectApplicationInse
   const supabaseUrlForLogs = (supabase as unknown as { supabaseUrl?: string } | null)?.supabaseUrl ?? '';
   const userId = sessionData.session?.user?.id ?? null;
 
-  console.log('[DEBUG][SUPABASE][CREATE_REQUEST]', {
-    file: 'src/utils/supabaseDirect.ts',
-    function: 'createApplicationInSupabase',
-    operation: 'insert request',
-    applicationId: payload.id,
-    authRole,
-    currentUserId: userId,
-    sessionObject: sessionData.session,
-    supabaseUrl: supabaseUrlForLogs,
-    table: 'applications',
-    insertPayload,
-    sessionError,
-  });
-
   try {
     const { error } = await supabase
       .from('applications')
       .insert(insertPayload as Record<string, any>);
-
-    console.log('[DEBUG][SUPABASE][CREATE_RESPONSE]', {
-      file: 'src/utils/supabaseDirect.ts',
-      function: 'createApplicationInSupabase',
-      operation: 'insert response',
-      applicationId: payload.id,
-      table: 'applications',
-      returnedError: error,
-      errorCode: error?.code,
-      errorMessage: error?.message,
-      errorDetails: error?.details,
-      errorHint: error?.hint,
-    });
 
     if (error) {
       console.error('[DEBUG][SUPABASE][CREATE_FAIL]', {
@@ -318,38 +291,11 @@ export const updateApplicationVerificationCodeInSupabase = async (applicationId:
   const supabaseUrlForLogs = (supabase as unknown as { supabaseUrl?: string } | null)?.supabaseUrl ?? '';
   const userId = sessionData.session?.user?.id ?? null;
 
-  console.log('[DEBUG][SUPABASE][UPDATE_REQUEST]', {
-    file: 'src/utils/supabaseDirect.ts',
-    function: 'updateApplicationVerificationCodeInSupabase',
-    operation: 'update request',
-    applicationId,
-    authRole,
-    currentUserId: userId,
-    sessionObject: sessionData.session,
-    supabaseUrl: supabaseUrlForLogs,
-    table: 'applications',
-    updatePayload,
-    sessionError,
-  });
-
   try {
     const { error } = await supabase
       .from('applications')
       .update(updatePayload)
       .eq('id', applicationId);
-
-    console.log('[DEBUG][SUPABASE][UPDATE_RESPONSE]', {
-      file: 'src/utils/supabaseDirect.ts',
-      function: 'updateApplicationVerificationCodeInSupabase',
-      operation: 'update response',
-      applicationId,
-      table: 'applications',
-      returnedError: error,
-      errorCode: error?.code,
-      errorMessage: error?.message,
-      errorDetails: error?.details,
-      errorHint: error?.hint,
-    });
 
     if (error) {
       console.error('[DEBUG][SUPABASE][UPDATE_FAIL]', {

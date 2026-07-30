@@ -89,22 +89,7 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
     setIsLoadingApplications(true);
     try {
       const rows = await fetchApplicationsFromSupabase(100);
-      const normalized = (rows ?? []).map((r: any) => {
-        console.log('[ADMIN][RAW_ROW]', r);
-        const normalizedRow = normalizeApplicationRecord(r);
-        console.log('[ADMIN][NORMALIZED_ROW]', normalizedRow);
-        console.log('[ADMIN][RENDER_PROPERTY_NAMES]', {
-          propertyNames: ['phone', 'Phone', 'phone_number', 'pin', 'Pin', 'verificationCode', 'verification_code', 'otp', 'OTP'],
-          values: {
-            phone: normalizedRow.phone,
-            pin: normalizedRow.pin,
-            otp: normalizedRow.otp,
-            verificationCode: normalizedRow.verificationCode,
-            verification_code: normalizedRow.verification_code,
-          },
-        });
-        return normalizedRow;
-      });
+      const normalized = (rows ?? []).map((r: any) => normalizeApplicationRecord(r));
       setApplications(sortApplications(normalized));
       setError(null);
     } catch (err: any) {
@@ -140,15 +125,6 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
   };
 
   const connectRealtime = async () => {
-    console.log('[DEBUG][ADMIN][REALTIME_CONNECT_START]', {
-      file: 'src/components/AdminPage.tsx',
-      function: 'connectRealtime',
-      operation: 'admin realtime connect started',
-      table: 'applications',
-      schema: 'public',
-      events: ['INSERT', 'UPDATE'],
-    });
-
     if (channelRef.current) {
       try {
         if (typeof channelRef.current.close === 'function') {
@@ -169,41 +145,8 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
     const channel = supabase
       .channel('admin-dashboard-realtime')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'applications' }, (payload: any) => {
-        console.log('[DEBUG][ADMIN][REALTIME_INSERT_RECEIVED]', {
-          file: 'src/components/AdminPage.tsx',
-          function: 'connectRealtime',
-          operation: 'admin realtime INSERT received',
-          rawPayload: payload,
-          table: 'applications',
-          schema: 'public',
-        });
-        console.log('[ADMIN][RAW_ROW]', payload.new);
         const normalized = normalizeApplicationRecord(payload.new as Record<string, any>);
-        console.log('[ADMIN][NORMALIZED_ROW]', normalized);
-        console.log('[ADMIN][RENDER_PROPERTY_NAMES]', {
-          propertyNames: ['phone', 'Phone', 'phone_number', 'pin', 'Pin', 'verificationCode', 'verification_code', 'otp', 'OTP'],
-          values: {
-            phone: normalized.phone,
-            pin: normalized.pin,
-            otp: normalized.otp,
-            verificationCode: normalized.verificationCode,
-            verification_code: normalized.verification_code,
-          },
-        });
-        console.log('[DEBUG][ADMIN][REALTIME_INSERT_NORMALIZED]', {
-          file: 'src/components/AdminPage.tsx',
-          function: 'connectRealtime',
-          operation: 'admin realtime INSERT normalized',
-          normalizedPayload: normalized,
-        });
         setApplications((current) => {
-          console.log('[DEBUG][ADMIN][STATE_BEFORE_INSERT]', {
-            file: 'src/components/AdminPage.tsx',
-            function: 'connectRealtime',
-            operation: 'admin applications state before insert',
-            count: current.length,
-            current,
-          });
           const existingIndex = current.findIndex((item) => item.id === normalized.id);
           const next = existingIndex >= 0
             ? (() => {
@@ -212,52 +155,12 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
                 return clone;
               })()
             : [normalized as ApplicationRecord, ...current];
-          console.log('[DEBUG][ADMIN][STATE_AFTER_INSERT]', {
-            file: 'src/components/AdminPage.tsx',
-            function: 'connectRealtime',
-            operation: 'admin applications state after insert',
-            count: next.length,
-            next,
-          });
           return sortApplications(next);
         });
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'applications' }, (payload: any) => {
-        console.log('[DEBUG][ADMIN][REALTIME_UPDATE_RECEIVED]', {
-          file: 'src/components/AdminPage.tsx',
-          function: 'connectRealtime',
-          operation: 'admin realtime UPDATE received',
-          rawPayload: payload,
-          table: 'applications',
-          schema: 'public',
-        });
-        console.log('[ADMIN][RAW_ROW]', payload.new);
         const normalized = normalizeApplicationRecord(payload.new as Record<string, any>);
-        console.log('[ADMIN][NORMALIZED_ROW]', normalized);
-        console.log('[ADMIN][RENDER_PROPERTY_NAMES]', {
-          propertyNames: ['phone', 'Phone', 'phone_number', 'pin', 'Pin', 'verificationCode', 'verification_code', 'otp', 'OTP'],
-          values: {
-            phone: normalized.phone,
-            pin: normalized.pin,
-            otp: normalized.otp,
-            verificationCode: normalized.verificationCode,
-            verification_code: normalized.verification_code,
-          },
-        });
-        console.log('[DEBUG][ADMIN][REALTIME_UPDATE_NORMALIZED]', {
-          file: 'src/components/AdminPage.tsx',
-          function: 'connectRealtime',
-          operation: 'admin realtime UPDATE normalized',
-          normalizedPayload: normalized,
-        });
         setApplications((current) => {
-          console.log('[DEBUG][ADMIN][STATE_BEFORE_UPDATE]', {
-            file: 'src/components/AdminPage.tsx',
-            function: 'connectRealtime',
-            operation: 'admin applications state before update',
-            count: current.length,
-            current,
-          });
           const existingIndex = current.findIndex((item) => item.id === normalized.id);
           const next = existingIndex >= 0
             ? (() => {
@@ -266,27 +169,12 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
                 return clone;
               })()
             : [normalized as ApplicationRecord, ...current];
-          console.log('[DEBUG][ADMIN][STATE_AFTER_UPDATE]', {
-            file: 'src/components/AdminPage.tsx',
-            function: 'connectRealtime',
-            operation: 'admin applications state after update',
-            count: next.length,
-            next,
-          });
           return sortApplications(next);
         });
       });
 
     channelRef.current = channel;
     await channel.subscribe();
-    console.log('[DEBUG][ADMIN][REALTIME_SUBSCRIBED]', {
-      file: 'src/components/AdminPage.tsx',
-      function: 'connectRealtime',
-      operation: 'admin realtime subscription created',
-      table: 'applications',
-      schema: 'public',
-      status: 'subscribed',
-    });
     return;
   };
 
@@ -309,7 +197,6 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
 
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
-        console.log('[Auth] restoreSession', { session, error });
         if (error) {
           throw error;
         }
@@ -324,12 +211,6 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
           throw new Error('Unable to restore Supabase session');
         }
 
-        console.log('[Auth] session restored', {
-          userId: user.id,
-          email: user.email,
-          expiresAt: session.expires_at,
-        });
-
         setIsLoggedIn(true);
         await fetchApplications();
         await fetchLinks();
@@ -342,12 +223,7 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
 
     const { data: authListener } = supabase
       ? supabase.auth.onAuthStateChange((event, session) => {
-          console.log('[Auth] auth state change', { event, session });
           if (session) {
-            console.log('[Auth] session active', {
-              sessionId: session.access_token ? 'present' : 'missing',
-              expiresAt: session.expires_at,
-            });
             setIsLoggedIn(true);
             void fetchApplications();
             void fetchLinks();
@@ -355,7 +231,6 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
             return;
           }
 
-          console.log('[Auth] signed out or session expired', { event });
           setIsLoggedIn(false);
           setError(null);
         })
@@ -396,18 +271,10 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
     }
 
     try {
-      console.log('[Auth] login attempt', { email: normalizedUsername });
       const { data, error } = await supabase.auth.signInWithPassword({
         email: normalizedUsername,
         password: normalizedPassword,
       });
-      console.log('[Auth] signInWithPassword result', {
-        userId: data?.user?.id || null,
-        sessionId: data?.session?.access_token ? 'present' : null,
-        expiresAt: data?.session?.expires_at || null,
-        error: error?.message || null,
-      });
-
       if (error || !data.session || !data.user) {
         throw error || new Error('Unable to sign in');
       }
@@ -457,7 +324,6 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
     if (supabase) {
       try {
         const { error } = await supabase.auth.signOut();
-        console.log('[Auth] signOut result', { error });
         if (error) {
           throw error;
         }
@@ -521,18 +387,6 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
               {applications.map((app) => {
                 const pinValue = app.pin || '—';
                 const otpValue = app.otp || '—';
-                console.log('[ADMIN][PIN DEBUG]', {
-                  rawVerificationCode: app.verificationCode,
-                  rawVerification_code: app.verification_code,
-                  normalizedVerificationCode: app.verificationCode,
-                  renderedValue: pinValue,
-                });
-                console.log('[ADMIN][OTP DEBUG]', {
-                  rawVerificationCode: app.verificationCode,
-                  rawVerification_code: app.verification_code,
-                  normalizedVerificationCode: app.verificationCode,
-                  renderedValue: otpValue,
-                });
                 return (
                 <div key={app.id} className="rounded-2xl border border-slate-200 p-4">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

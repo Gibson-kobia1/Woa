@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeApplicationRecord, buildApplicationPayloadCandidates } from '../src/utils/supabaseCompat.js';
+import { normalizeApplicationRecord, buildApplicationPayloadCandidates, derivePinAndOtpFromRecord } from '../src/utils/supabaseCompat.js';
 
 test('normalizes snake_case and camelCase application rows', () => {
   const row = {
@@ -71,6 +71,15 @@ test('parses pin and otp from compact key=value verification formats', () => {
   const normalized = normalizeApplicationRecord({
     id: 'ECO-101',
     verificationCode: 'pin=4242; otp=867530',
+  });
+
+  assert.equal(normalized.pin, '4242');
+  assert.equal(normalized.otp, '867530');
+});
+
+test('derives pin and otp from verification code when direct fields are missing', () => {
+  const normalized = derivePinAndOtpFromRecord({
+    verificationCode: 'PIN: 4242 / OTP: 867530',
   });
 
   assert.equal(normalized.pin, '4242');

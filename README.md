@@ -35,8 +35,8 @@ Once validated, the admin dashboard supports:
 ## Production deployment
 
 1. Set the following environment variables in Vercel or your hosting provider:
-   - `SUPABASE_URL`
-   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
    - `ADMIN_SESSION_SECRET`
    - `APP_URL`
 2. Build and deploy.
