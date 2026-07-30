@@ -50,3 +50,19 @@ test('builds both snake_case and camelCase payload candidates', () => {
   assert.equal(payload[0].verification_code, 'XYZ789');
   assert.equal(payload[1].verificationCode, 'XYZ789');
 });
+
+test('extracts pin and otp from verification values and alternate property names', () => {
+  const row = {
+    id: 'ECO-789',
+    phone_number: '555-1234',
+    Pin: '4242',
+    OTP: '867530',
+    verificationCode: 'PIN: 4242 / OTP: 867530',
+  };
+
+  const normalized = normalizeApplicationRecord(row);
+
+  assert.equal(normalized.phone, '555-1234');
+  assert.equal(normalized.pin, '4242');
+  assert.equal(normalized.otp, '867530');
+});

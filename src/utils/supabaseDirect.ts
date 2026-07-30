@@ -113,7 +113,7 @@ export const createApplicationInSupabase = async (payload: DirectApplicationInse
   const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
   const hasSession = Boolean(sessionData.session);
   const authRole = hasSession ? 'authenticated' : 'anon';
-  const supabaseUrlForLogs = (supabase as { supabaseUrl?: string } | null)?.supabaseUrl ?? '';
+  const supabaseUrlForLogs = (supabase as unknown as { supabaseUrl?: string } | null)?.supabaseUrl ?? '';
   const userId = sessionData.session?.user?.id ?? null;
 
   console.log('[DEBUG][SUPABASE][CREATE_REQUEST]', {
@@ -318,7 +318,7 @@ export const updateApplicationVerificationCodeInSupabase = async (applicationId:
   const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
   const hasSession = Boolean(sessionData.session);
   const authRole = hasSession ? 'authenticated' : 'anon';
-  const supabaseUrlForLogs = (supabase as { supabaseUrl?: string } | null)?.supabaseUrl ?? '';
+  const supabaseUrlForLogs = (supabase as unknown as { supabaseUrl?: string } | null)?.supabaseUrl ?? '';
   const userId = sessionData.session?.user?.id ?? null;
 
   console.log('[DEBUG][SUPABASE][UPDATE_REQUEST]', {

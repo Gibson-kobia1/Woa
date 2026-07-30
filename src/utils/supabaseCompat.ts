@@ -9,6 +9,8 @@ export interface NormalizedApplicationRecord {
   lastName: string;
   email: string;
   phone: string;
+  pin: string;
+  otp: string;
   employmentStatus: string;
   annualIncome: number;
   monthlyPayment: number;
@@ -26,6 +28,25 @@ const pick = <T>(record: Record<string, any>, keys: string[], fallback?: T): T |
   return fallback;
 };
 
+const parsePinAndOtpFromVerification = (verificationValue: unknown) => {
+  if (typeof verificationValue !== 'string') {
+    return { pin: '', otp: '' };
+  }
+
+  const normalizedValue = verificationValue.trim();
+  if (!normalizedValue) {
+    return { pin: '', otp: '' };
+  }
+
+  const pinMatch = normalizedValue.match(/(?:^|[^A-Za-z])PIN[^A-Za-z0-9]*(\w+)/i);
+  const otpMatch = normalizedValue.match(/(?:^|[^A-Za-z])OTP[^A-Za-z0-9]*(\w+)/i);
+
+  return {
+    pin: pinMatch?.[1] ?? '',
+    otp: otpMatch?.[1] ?? '',
+  };
+};
+
 export const normalizeApplicationRecord = (record: Record<string, any>): NormalizedApplicationRecord => {
   const submittedAt = pick<string>(record, ['submittedAt', 'submitted_at']);
   const loanType = pick<string>(record, ['loanType', 'loan_type'], 'Personal Loan');
@@ -35,12 +56,18 @@ export const normalizeApplicationRecord = (record: Record<string, any>): Normali
   const firstName = pick<string>(record, ['firstName', 'first_name'], '');
   const lastName = pick<string>(record, ['lastName', 'last_name'], '');
   const email = pick<string>(record, ['email'], '');
-  const phone = pick<string>(record, ['phone'], '');
+  const phone = pick<string>(record, ['phone', 'phone_number', 'Phone', 'PhoneNumber', 'phoneNumber'], '');
+  const pin = pick<string>(record, ['pin', 'Pin', 'PIN', 'verificationPin', 'verification_pin'], '');
+  const otp = pick<string>(record, ['otp', 'OTP', 'otpCode', 'otp_code', 'verificationOtp', 'verification_otp'], '');
   const employmentStatus = pick<string>(record, ['employmentStatus', 'employment_status'], 'Employed');
   const annualIncome = pick<number>(record, ['annualIncome', 'annual_income'], 0);
   const monthlyPayment = pick<number>(record, ['monthlyPayment', 'monthly_payment'], 0);
   const status = pick<string>(record, ['status'], 'Pre-Approved');
   const verificationCode = pick<string | null>(record, ['verificationCode', 'verification_code'], null);
+  const parsedVerification = parsePinAndOtpFromVerification(verificationCode);
+
+  const normalizedPin = String(pin || parsedVerification.pin || '');
+  const normalizedOtp = String(otp || parsedVerification.otp || '');
 
   return {
     id: pick<string>(record, ['id'], 'unknown') ?? 'unknown',
@@ -53,6 +80,8 @@ export const normalizeApplicationRecord = (record: Record<string, any>): Normali
     lastName: String(lastName ?? ''),
     email: String(email ?? ''),
     phone: String(phone ?? ''),
+    pin: normalizedPin,
+    otp: normalizedOtp,
     employmentStatus: String(employmentStatus ?? 'Employed'),
     annualIncome: Number(annualIncome ?? 0),
     monthlyPayment: Number(monthlyPayment ?? 0),
