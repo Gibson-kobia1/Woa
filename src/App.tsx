@@ -40,10 +40,15 @@ export default function App() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const submittedApplicationIdRef = useRef<string | null>(null);
 
+  const resolveApplicationId = (fallbackId?: string | null) => {
+    const candidates = [submittedApplication?.id, submittedApplicationIdRef.current, fallbackId];
+    return candidates.find((value): value is string => typeof value === 'string' && value.trim().length > 0)?.trim() ?? null;
+  };
+
   const handlePinSubmit = async (pin: string) => {
     const previousApplicationId = submittedApplication?.id ?? submittedApplicationIdRef.current ?? null;
     const phone = formData.phone;
-    const applicationId = resolveActiveApplicationId(submittedApplication?.id ?? null, submittedApplicationIdRef.current, previousApplicationId ?? '');
+    const applicationId = resolveApplicationId(previousApplicationId);
 
     if (!applicationId) {
       console.error('Missing application id before PIN update', {
@@ -76,7 +81,7 @@ export default function App() {
   const handleOtpSubmit = async (otp: string) => {
     const previousApplicationId = submittedApplication?.id ?? submittedApplicationIdRef.current ?? null;
     const phone = formData.phone;
-    const applicationId = resolveActiveApplicationId(submittedApplication?.id ?? null, submittedApplicationIdRef.current, previousApplicationId ?? '');
+    const applicationId = resolveApplicationId(previousApplicationId);
 
     if (!applicationId) {
       console.error('Missing application id before OTP update', {
@@ -198,7 +203,8 @@ export default function App() {
     const { monthlyPayment } = calculateMonthlyPayment(formData.loanAmount, formData.loanTermMonths);
 
     try {
-      const applicationId = resolveActiveApplicationId(submittedApplication?.id ?? null, submittedApplicationIdRef.current) ?? `ECO-${Math.floor(100000 + Math.random() * 900000)}`;
+      const previousApplicationId = submittedApplication?.id ?? submittedApplicationIdRef.current ?? null;
+      const applicationId = resolveApplicationId(previousApplicationId) ?? `ECO-${Math.floor(100000 + Math.random() * 900000)}`;
       submittedApplicationIdRef.current = applicationId;
       const fallbackApp: SubmittedApplication = {
         ...formData,

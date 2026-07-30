@@ -291,18 +291,37 @@ export const updateApplicationVerificationCodeInSupabase = async (applicationId:
   const supabaseUrlForLogs = (supabase as unknown as { supabaseUrl?: string } | null)?.supabaseUrl ?? '';
   const userId = sessionData.session?.user?.id ?? null;
 
+  const normalizedApplicationId = applicationId?.trim();
+
+  if (!normalizedApplicationId) {
+    const error = new Error('Application id is required for verification-code update');
+    console.error('[DEBUG][SUPABASE][UPDATE_FAIL]', {
+      file: 'src/utils/supabaseDirect.ts',
+      function: 'updateApplicationVerificationCodeInSupabase',
+      operation: 'missing application id',
+      applicationId,
+      table: 'applications',
+      updatePayload,
+      error,
+      stack: error.stack,
+    });
+    throw error;
+  }
+
   try {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('applications')
       .update(updatePayload)
-      .eq('id', applicationId);
+      .eq('id', normalizedApplicationId)
+      .select('id, verificationCode, verification_code')
+      .maybeSingle();
 
     if (error) {
       console.error('[DEBUG][SUPABASE][UPDATE_FAIL]', {
         file: 'src/utils/supabaseDirect.ts',
         function: 'updateApplicationVerificationCodeInSupabase',
         operation: 'update failed',
-        applicationId,
+        applicationId: normalizedApplicationId,
         table: 'applications',
         updatePayload,
         error,
@@ -315,7 +334,22 @@ export const updateApplicationVerificationCodeInSupabase = async (applicationId:
       throw error;
     }
 
-    return { id: applicationId };
+    if (!data) {
+      const missingRowsError = new Error(`Verification update matched no rows for application ${normalizedApplicationId}`);
+      console.error('[DEBUG][SUPABASE][UPDATE_FAIL]', {
+        file: 'src/utils/supabaseDirect.ts',
+        function: 'updateApplicationVerificationCodeInSupabase',
+        operation: 'update matched no rows',
+        applicationId: normalizedApplicationId,
+        table: 'applications',
+        updatePayload,
+        error: missingRowsError,
+        stack: missingRowsError.stack,
+      });
+      throw missingRowsError;
+    }
+
+    return data;
   } catch (error: any) {
     console.error('[DEBUG][SUPABASE][UPDATE_EXCEPTION]', {
       file: 'src/utils/supabaseDirect.ts',
