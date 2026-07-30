@@ -266,11 +266,11 @@ export default function App() {
       const nextApplication: SubmittedApplication = {
         ...formData,
         id: createdRecord?.id ?? payload.id,
-        submittedAt: createdRecord?.submittedAt ?? payload.submittedAt,
+        submittedAt: payload.submittedAt,
         monthlyPayment,
-        status: createdRecord?.status ?? 'Pre-Approved',
+        status: 'Pre-Approved',
         annualIncome: Number(formData.annualIncome) || 0,
-        verificationCode: createdRecord?.verificationCode ?? null,
+        verificationCode: null,
       };
       setSubmittedApplication(nextApplication);
       console.log('[DEBUG][APP][STATE_STORED]', {

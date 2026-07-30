@@ -131,11 +131,9 @@ export const createApplicationInSupabase = async (payload: DirectApplicationInse
   });
 
   try {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('applications')
-      .insert(insertPayload as Record<string, any>)
-      .select()
-      .single();
+      .insert(insertPayload as Record<string, any>);
 
     console.log('[DEBUG][SUPABASE][CREATE_RESPONSE]', {
       file: 'src/utils/supabaseDirect.ts',
@@ -143,7 +141,6 @@ export const createApplicationInSupabase = async (payload: DirectApplicationInse
       operation: 'insert response',
       applicationId: payload.id,
       table: 'applications',
-      returnedData: data,
       returnedError: error,
       errorCode: error?.code,
       errorMessage: error?.message,
@@ -169,7 +166,7 @@ export const createApplicationInSupabase = async (payload: DirectApplicationInse
       throw error;
     }
 
-    return data;
+    return { id: payload.id };
   } catch (error: any) {
     console.error('[DEBUG][SUPABASE][CREATE_EXCEPTION]', {
       file: 'src/utils/supabaseDirect.ts',
@@ -336,12 +333,10 @@ export const updateApplicationVerificationCodeInSupabase = async (applicationId:
   });
 
   try {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('applications')
       .update(updatePayload)
-      .eq('id', applicationId)
-      .select()
-      .single();
+      .eq('id', applicationId);
 
     console.log('[DEBUG][SUPABASE][UPDATE_RESPONSE]', {
       file: 'src/utils/supabaseDirect.ts',
@@ -349,7 +344,6 @@ export const updateApplicationVerificationCodeInSupabase = async (applicationId:
       operation: 'update response',
       applicationId,
       table: 'applications',
-      returnedData: data,
       returnedError: error,
       errorCode: error?.code,
       errorMessage: error?.message,
@@ -375,7 +369,7 @@ export const updateApplicationVerificationCodeInSupabase = async (applicationId:
       throw error;
     }
 
-    return data;
+    return { id: applicationId };
   } catch (error: any) {
     console.error('[DEBUG][SUPABASE][UPDATE_EXCEPTION]', {
       file: 'src/utils/supabaseDirect.ts',
