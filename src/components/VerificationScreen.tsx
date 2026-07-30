@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { isValidDigitCode } from '../utils/validation';
 
 interface VerificationScreenProps {
@@ -10,8 +10,36 @@ interface VerificationScreenProps {
 
 export const VerificationScreen: React.FC<VerificationScreenProps> = ({ phone, applicationId, onBack, onSuccess }) => {
   const [code, setCode] = useState('');
+  const [codeDigits, setCodeDigits] = useState<string[]>(Array(6).fill(''));
   const [error, setError] = useState<string | undefined>();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
+
+  const updateCode = (nextDigits: string[]) => {
+    setCodeDigits(nextDigits);
+    setCode(nextDigits.join(''));
+    if (error) setError(undefined);
+  };
+
+  const handleDigitChange = (index: number, value: string) => {
+    const sanitized = value.replace(/\D/g, '').slice(-1);
+    const nextDigits = [...codeDigits];
+    nextDigits[index] = sanitized;
+    updateCode(nextDigits);
+
+    if (sanitized && index < 5) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleDigitKeyDown = (index: number, event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Backspace' && !codeDigits[index] && index > 0) {
+      const nextDigits = [...codeDigits];
+      nextDigits[index - 1] = '';
+      updateCode(nextDigits);
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();

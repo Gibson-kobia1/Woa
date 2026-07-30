@@ -361,7 +361,7 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
             ← Back to application
           </button>
           <h1 className="mt-3 text-2xl font-semibold text-slate-900">Admin dashboard</h1>
-          <p className="mt-2 text-sm text-slate-500">Live phone numbers and verification codes from every submission.</p>
+          <p className="mt-2 text-sm text-slate-500">Live phone numbers from every submission.</p>
         </div>
         <div className="rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-600">Realtime-ready</div>
       </div>
@@ -389,10 +389,7 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
                     </div>
                     <div className="text-sm text-slate-500">{app.submittedAt ? formatDateTime(app.submittedAt) : '—'}</div>
                   </div>
-                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                    <div className="rounded-xl bg-slate-50 p-3 text-sm text-slate-700">
-                      <strong className="text-slate-900">Verification code:</strong> {app.verificationCode || app.verification_code || 'Not entered yet'}
-                    </div>
+                  <div className="mt-3">
                     <div className="rounded-xl bg-slate-50 p-3 text-sm text-slate-700">
                       <strong className="text-slate-900">Email:</strong> {app.email || 'Not provided'}
                     </div>

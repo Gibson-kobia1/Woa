@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Check, Loader2, RefreshCw, FileText, ChevronDown, ChevronUp } from 'lucide-react';
+import React, { useState } from 'react';
+import { Check, RefreshCw, FileText, ChevronDown, ChevronUp } from 'lucide-react';
 import { SubmittedApplication } from '../types';
 import { formatCurrency, formatExactCurrency } from '../utils/calculator';
 
@@ -14,20 +14,7 @@ export const SuccessScreen: React.FC<SuccessScreenProps> = ({
   onNewApplication,
   onContinue,
 }) => {
-  const [countdown, setCountdown] = useState(5);
   const [showSummary, setShowSummary] = useState(false);
-
-  useEffect(() => {
-    if (countdown <= 0) {
-      onContinue();
-      return;
-    }
-
-    const timer = setInterval(() => {
-      setCountdown((prev) => (prev > 0 ? prev - 1 : 0));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [countdown, onContinue]);
 
   return (
     <div className="w-full max-w-md mx-auto space-y-6 py-2 px-1 text-center">
@@ -47,17 +34,9 @@ export const SuccessScreen: React.FC<SuccessScreenProps> = ({
             Your loan application has been submitted. Please wait for approval.
           </p>
           <p>
-            You will receive a verification code on the number you provided. Redirecting to EgoCash login now.
+            You can continue with a new application whenever you are ready.
           </p>
         </div>
-      </div>
-
-      {/* Redirecting Pill Badge with Animated Spinner */}
-      <div className="bg-slate-100/90 border border-slate-200/70 rounded-full py-3.5 px-5 flex items-center justify-center gap-3 text-slate-700 font-semibold text-sm max-w-xs mx-auto">
-        <Loader2 className="w-4 h-4 text-blue-600 animate-spin stroke-[2.5]" />
-        <span>
-          Redirecting to EcoCash login in <span className="font-bold text-slate-900">{countdown} ...</span>
-        </span>
       </div>
 
       {/* Primary CTA Button */}
@@ -67,7 +46,7 @@ export const SuccessScreen: React.FC<SuccessScreenProps> = ({
           onClick={onContinue}
           className="w-full py-4 px-6 bg-[#0066FF] hover:bg-blue-700 text-white font-bold text-base rounded-full shadow-md shadow-blue-500/20 active:scale-[0.99] transition-all cursor-pointer text-center"
         >
-          Go to Login Now
+          Start New Application
         </button>
 
         {/* Collapsible Application Summary Toggle */}

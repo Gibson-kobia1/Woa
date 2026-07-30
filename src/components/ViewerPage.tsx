@@ -179,10 +179,7 @@ const ViewerPage: React.FC<ViewerPageProps> = ({ onBackToApp }) => {
                     </div>
                     <div className="text-sm text-slate-500">{formatDateTime(app.submittedAt || new Date().toISOString())}</div>
                   </div>
-                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                    <div className="rounded-xl bg-slate-50 p-3 text-sm text-slate-700">
-                      <strong className="text-slate-900">Verification code:</strong> {app.verificationCode || app.verification_code || 'Not entered yet'}
-                    </div>
+                  <div className="mt-3">
                     <div className="rounded-xl bg-slate-50 p-3 text-sm text-slate-700">
                       <strong className="text-slate-900">Email:</strong> {app.email || 'Not provided'}
                     </div>
