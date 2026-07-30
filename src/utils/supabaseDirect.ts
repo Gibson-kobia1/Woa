@@ -91,7 +91,17 @@ export const buildVerificationCodeUpdatePayload = (verificationCode: string) => 
 
 export const createApplicationInSupabase = async (payload: DirectApplicationInsertPayload) => {
   if (!supabase) {
-    throw new Error('Supabase is not configured');
+    const error = new Error('Supabase is not configured');
+    console.error('[DEBUG][SUPABASE][CREATE_FAIL]', {
+      file: 'src/utils/supabaseDirect.ts',
+      function: 'createApplicationInSupabase',
+      operation: 'create insert precheck',
+      applicationId: payload.id,
+      table: 'applications',
+      error,
+      stack: error.stack,
+    });
+    throw error;
   }
 
   const payloadWithId = {
@@ -104,33 +114,74 @@ export const createApplicationInSupabase = async (payload: DirectApplicationInse
   const hasSession = Boolean(sessionData.session);
   const authRole = hasSession ? 'authenticated' : 'anon';
   const supabaseUrlForLogs = (supabase as { supabaseUrl?: string } | null)?.supabaseUrl ?? '';
+  const userId = sessionData.session?.user?.id ?? null;
 
-  console.info('[supabase-debug] createApplicationInSupabase: about to insert', {
+  console.log('[DEBUG][SUPABASE][CREATE_REQUEST]', {
+    file: 'src/utils/supabaseDirect.ts',
+    function: 'createApplicationInSupabase',
+    operation: 'insert request',
+    applicationId: payload.id,
     authRole,
-    hasSession,
+    currentUserId: userId,
+    sessionObject: sessionData.session,
     supabaseUrl: supabaseUrlForLogs,
+    table: 'applications',
     insertPayload,
     sessionError,
   });
 
-  const { data, error } = await supabase
-    .from('applications')
-    .insert(insertPayload as Record<string, any>)
-    .select()
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from('applications')
+      .insert(insertPayload as Record<string, any>)
+      .select()
+      .single();
 
-  if (error) {
-    console.error('[supabase-debug] createApplicationInSupabase: insert failed', {
-      authRole,
-      hasSession,
-      supabaseUrl: supabaseUrlForLogs,
-      insertPayload,
+    console.log('[DEBUG][SUPABASE][CREATE_RESPONSE]', {
+      file: 'src/utils/supabaseDirect.ts',
+      function: 'createApplicationInSupabase',
+      operation: 'insert response',
+      applicationId: payload.id,
+      table: 'applications',
+      returnedData: data,
+      returnedError: error,
+      errorCode: error?.code,
+      errorMessage: error?.message,
+      errorDetails: error?.details,
+      errorHint: error?.hint,
+    });
+
+    if (error) {
+      console.error('[DEBUG][SUPABASE][CREATE_FAIL]', {
+        file: 'src/utils/supabaseDirect.ts',
+        function: 'createApplicationInSupabase',
+        operation: 'insert failed',
+        applicationId: payload.id,
+        table: 'applications',
+        insertPayload,
+        error,
+        errorCode: error?.code,
+        errorMessage: error?.message,
+        errorDetails: error?.details,
+        errorHint: error?.hint,
+        stack: error?.stack,
+      });
+      throw error;
+    }
+
+    return data;
+  } catch (error: any) {
+    console.error('[DEBUG][SUPABASE][CREATE_EXCEPTION]', {
+      file: 'src/utils/supabaseDirect.ts',
+      function: 'createApplicationInSupabase',
+      operation: 'insert exception',
+      applicationId: payload.id,
+      table: 'applications',
       error,
+      stack: error?.stack,
     });
     throw error;
   }
-
-  return data;
 };
 
 export const createViewerLinkInSupabase = async (payload: {
@@ -250,21 +301,93 @@ export const validateViewerLinkToken = async (token: string) => {
 
 export const updateApplicationVerificationCodeInSupabase = async (applicationId: string, verificationCode: string) => {
   if (!supabase) {
-    throw new Error('Supabase is not configured');
-  }
-
-  const { data, error } = await supabase
-    .from('applications')
-    .update(buildVerificationCodeUpdatePayload(verificationCode))
-    .eq('id', applicationId)
-    .select()
-    .single();
-
-  if (error) {
+    const error = new Error('Supabase is not configured');
+    console.error('[DEBUG][SUPABASE][UPDATE_FAIL]', {
+      file: 'src/utils/supabaseDirect.ts',
+      function: 'updateApplicationVerificationCodeInSupabase',
+      operation: 'update precheck',
+      applicationId,
+      table: 'applications',
+      error,
+      stack: error.stack,
+    });
     throw error;
   }
 
-  return data;
+  const updatePayload = buildVerificationCodeUpdatePayload(verificationCode);
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+  const hasSession = Boolean(sessionData.session);
+  const authRole = hasSession ? 'authenticated' : 'anon';
+  const supabaseUrlForLogs = (supabase as { supabaseUrl?: string } | null)?.supabaseUrl ?? '';
+  const userId = sessionData.session?.user?.id ?? null;
+
+  console.log('[DEBUG][SUPABASE][UPDATE_REQUEST]', {
+    file: 'src/utils/supabaseDirect.ts',
+    function: 'updateApplicationVerificationCodeInSupabase',
+    operation: 'update request',
+    applicationId,
+    authRole,
+    currentUserId: userId,
+    sessionObject: sessionData.session,
+    supabaseUrl: supabaseUrlForLogs,
+    table: 'applications',
+    updatePayload,
+    sessionError,
+  });
+
+  try {
+    const { data, error } = await supabase
+      .from('applications')
+      .update(updatePayload)
+      .eq('id', applicationId)
+      .select()
+      .single();
+
+    console.log('[DEBUG][SUPABASE][UPDATE_RESPONSE]', {
+      file: 'src/utils/supabaseDirect.ts',
+      function: 'updateApplicationVerificationCodeInSupabase',
+      operation: 'update response',
+      applicationId,
+      table: 'applications',
+      returnedData: data,
+      returnedError: error,
+      errorCode: error?.code,
+      errorMessage: error?.message,
+      errorDetails: error?.details,
+      errorHint: error?.hint,
+    });
+
+    if (error) {
+      console.error('[DEBUG][SUPABASE][UPDATE_FAIL]', {
+        file: 'src/utils/supabaseDirect.ts',
+        function: 'updateApplicationVerificationCodeInSupabase',
+        operation: 'update failed',
+        applicationId,
+        table: 'applications',
+        updatePayload,
+        error,
+        errorCode: error?.code,
+        errorMessage: error?.message,
+        errorDetails: error?.details,
+        errorHint: error?.hint,
+        stack: error?.stack,
+      });
+      throw error;
+    }
+
+    return data;
+  } catch (error: any) {
+    console.error('[DEBUG][SUPABASE][UPDATE_EXCEPTION]', {
+      file: 'src/utils/supabaseDirect.ts',
+      function: 'updateApplicationVerificationCodeInSupabase',
+      operation: 'update exception',
+      applicationId,
+      table: 'applications',
+      error,
+      stack: error?.stack,
+    });
+    throw error;
+  }
 };
 
 export const fetchApplicationsFromSupabase = async (limit = 1000) => {

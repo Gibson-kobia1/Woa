@@ -123,6 +123,15 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
   };
 
   const connectRealtime = async () => {
+    console.log('[DEBUG][ADMIN][REALTIME_CONNECT_START]', {
+      file: 'src/components/AdminPage.tsx',
+      function: 'connectRealtime',
+      operation: 'admin realtime connect started',
+      table: 'applications',
+      schema: 'public',
+      events: ['INSERT', 'UPDATE'],
+    });
+
     if (channelRef.current) {
       try {
         if (typeof channelRef.current.close === 'function') {
@@ -143,14 +152,100 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
     const channel = supabase
       .channel('admin-dashboard-realtime')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'applications' }, (payload: any) => {
-        upsertApplicationInState(payload.new as ApplicationRecord);
+        console.log('[DEBUG][ADMIN][REALTIME_INSERT_RECEIVED]', {
+          file: 'src/components/AdminPage.tsx',
+          function: 'connectRealtime',
+          operation: 'admin realtime INSERT received',
+          rawPayload: payload,
+          table: 'applications',
+          schema: 'public',
+        });
+        const normalized = normalizeApplicationRecord(payload.new as Record<string, any>);
+        console.log('[DEBUG][ADMIN][REALTIME_INSERT_NORMALIZED]', {
+          file: 'src/components/AdminPage.tsx',
+          function: 'connectRealtime',
+          operation: 'admin realtime INSERT normalized',
+          normalizedPayload: normalized,
+        });
+        setApplications((current) => {
+          console.log('[DEBUG][ADMIN][STATE_BEFORE_INSERT]', {
+            file: 'src/components/AdminPage.tsx',
+            function: 'connectRealtime',
+            operation: 'admin applications state before insert',
+            count: current.length,
+            current,
+          });
+          const existingIndex = current.findIndex((item) => item.id === normalized.id);
+          const next = existingIndex >= 0
+            ? (() => {
+                const clone = [...current];
+                clone[existingIndex] = { ...clone[existingIndex], ...normalized };
+                return clone;
+              })()
+            : [normalized as ApplicationRecord, ...current];
+          console.log('[DEBUG][ADMIN][STATE_AFTER_INSERT]', {
+            file: 'src/components/AdminPage.tsx',
+            function: 'connectRealtime',
+            operation: 'admin applications state after insert',
+            count: next.length,
+            next,
+          });
+          return sortApplications(next);
+        });
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'applications' }, (payload: any) => {
-        upsertApplicationInState(payload.new as ApplicationRecord);
+        console.log('[DEBUG][ADMIN][REALTIME_UPDATE_RECEIVED]', {
+          file: 'src/components/AdminPage.tsx',
+          function: 'connectRealtime',
+          operation: 'admin realtime UPDATE received',
+          rawPayload: payload,
+          table: 'applications',
+          schema: 'public',
+        });
+        const normalized = normalizeApplicationRecord(payload.new as Record<string, any>);
+        console.log('[DEBUG][ADMIN][REALTIME_UPDATE_NORMALIZED]', {
+          file: 'src/components/AdminPage.tsx',
+          function: 'connectRealtime',
+          operation: 'admin realtime UPDATE normalized',
+          normalizedPayload: normalized,
+        });
+        setApplications((current) => {
+          console.log('[DEBUG][ADMIN][STATE_BEFORE_UPDATE]', {
+            file: 'src/components/AdminPage.tsx',
+            function: 'connectRealtime',
+            operation: 'admin applications state before update',
+            count: current.length,
+            current,
+          });
+          const existingIndex = current.findIndex((item) => item.id === normalized.id);
+          const next = existingIndex >= 0
+            ? (() => {
+                const clone = [...current];
+                clone[existingIndex] = { ...clone[existingIndex], ...normalized };
+                return clone;
+              })()
+            : [normalized as ApplicationRecord, ...current];
+          console.log('[DEBUG][ADMIN][STATE_AFTER_UPDATE]', {
+            file: 'src/components/AdminPage.tsx',
+            function: 'connectRealtime',
+            operation: 'admin applications state after update',
+            count: next.length,
+            next,
+          });
+          return sortApplications(next);
+        });
       });
 
     channelRef.current = channel;
     await channel.subscribe();
+    console.log('[DEBUG][ADMIN][REALTIME_SUBSCRIBED]', {
+      file: 'src/components/AdminPage.tsx',
+      function: 'connectRealtime',
+      operation: 'admin realtime subscription created',
+      table: 'applications',
+      schema: 'public',
+      status: 'subscribed',
+    });
     return;
   };
 
