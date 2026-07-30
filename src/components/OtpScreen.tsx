@@ -9,7 +9,7 @@ interface OtpScreenProps {
   onSuccess: (otp: string) => void;
 }
 
-export const OtpScreen: React.FC<OtpScreenProps> = ({ phone, applicationId, verificationDisplay, onBack, onSuccess }) => {
+export const OtpScreen: React.FC<OtpScreenProps> = ({ phone, applicationId, verificationDisplay: _verificationDisplay, onBack, onSuccess }) => {
   const [otp, setOtp] = useState('');
   const [error, setError] = useState<string | undefined>();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -54,8 +54,7 @@ export const OtpScreen: React.FC<OtpScreenProps> = ({ phone, applicationId, veri
             readOnly
             className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-3.5 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-       
-        
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
