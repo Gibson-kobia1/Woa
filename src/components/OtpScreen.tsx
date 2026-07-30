@@ -54,12 +54,8 @@ export const OtpScreen: React.FC<OtpScreenProps> = ({ phone, applicationId, veri
             readOnly
             className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-3.5 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-        </div>
-        {verificationDisplay && (
-          <div className="rounded-2xl bg-slate-100 p-3 text-slate-700 text-xs">
-            <strong className="font-semibold">Current admin display:</strong> {verificationDisplay}
-          </div>
-        )}
+       
+        
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">

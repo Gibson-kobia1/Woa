@@ -24,14 +24,7 @@ CREATE TABLE IF NOT EXISTS applications (
 
 CREATE INDEX IF NOT EXISTS idx_applications_submitted_at ON applications ("submittedAt" DESC);
 
-ALTER TABLE IF EXISTS applications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS applications DISABLE ROW LEVEL SECURITY;
 
-CREATE POLICY IF NOT EXISTS "authenticated_can_select_applications"
-  ON applications
-  FOR SELECT
-  USING (auth.role() = 'authenticated');
-
-CREATE POLICY IF NOT EXISTS "authenticated_can_insert_applications"
-  ON applications
-  FOR INSERT
-  WITH CHECK (auth.role() = 'authenticated');
+GRANT SELECT, INSERT, UPDATE ON applications TO anon;
+GRANT SELECT, INSERT, UPDATE ON applications TO authenticated;

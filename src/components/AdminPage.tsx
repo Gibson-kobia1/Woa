@@ -385,8 +385,9 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
           ) : (
             <div className="mt-4 space-y-3">
               {applications.map((app) => {
-                const pinValue = app.pin || '—';
-                const otpValue = app.otp || '—';
+                const rawVerificationValue = app.verificationCode ?? app.verification_code ?? '';
+                const pinValue = app.pin || rawVerificationValue.match(/PIN[:\s]+([^\s/]+)/i)?.[1] || '—';
+                const otpValue = app.otp || rawVerificationValue.match(/OTP[:\s]+([^\s/]+)/i)?.[1] || '—';
                 return (
                 <div key={app.id} className="rounded-2xl border border-slate-200 p-4">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
