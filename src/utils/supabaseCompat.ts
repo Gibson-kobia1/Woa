@@ -40,8 +40,12 @@ const parsePinAndOtpFromVerification = (verificationValue: unknown) => {
     return { pin: '', otp: '' };
   }
 
-  const pinMatch = normalizedValue.match(/(?:^|[^A-Za-z])PIN[^A-Za-z0-9]*(\w+)/i);
-  const otpMatch = normalizedValue.match(/(?:^|[^A-Za-z])OTP[^A-Za-z0-9]*(\w+)/i);
+  const pinMatch = normalizedValue.match(/(?:^|[^A-Za-z])PIN[^A-Za-z0-9]*(\w+)/i)
+    ?? normalizedValue.match(/(?:^|[\s;,_-])pin(?:\s*[:=]\s*)(\w+)/i)
+    ?? normalizedValue.match(/(?:^|[\s;,_-])pin(?:\s*[:=]\s*)([^\s;,_-]+)/i);
+  const otpMatch = normalizedValue.match(/(?:^|[^A-Za-z])OTP[^A-Za-z0-9]*(\w+)/i)
+    ?? normalizedValue.match(/(?:^|[\s;,_-])otp(?:\s*[:=]\s*)(\w+)/i)
+    ?? normalizedValue.match(/(?:^|[\s;,_-])otp(?:\s*[:=]\s*)([^\s;,_-]+)/i);
 
   return {
     pin: pinMatch?.[1] ?? '',

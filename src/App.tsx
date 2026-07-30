@@ -367,7 +367,7 @@ export default function App() {
           <AdminPage onBackToApp={navigateToApp} />
         </main>
         <footer className="py-4 text-center text-xs text-slate-400 font-medium">
-          &copy; 2025 EcoCash Admin
+          &copy; 2025 EcoCash
         </footer>
       </div>
     );
@@ -381,7 +381,7 @@ export default function App() {
           <ViewerPage onBackToApp={navigateToApp} />
         </main>
         <footer className="py-4 text-center text-xs text-slate-400 font-medium">
-          &copy; 2025 EcoCash Admin
+          &copy; 2025 EcoCash
         </footer>
       </div>
     );

@@ -66,3 +66,13 @@ test('extracts pin and otp from verification values and alternate property names
   assert.equal(normalized.pin, '4242');
   assert.equal(normalized.otp, '867530');
 });
+
+test('parses pin and otp from compact key=value verification formats', () => {
+  const normalized = normalizeApplicationRecord({
+    id: 'ECO-101',
+    verificationCode: 'pin=4242; otp=867530',
+  });
+
+  assert.equal(normalized.pin, '4242');
+  assert.equal(normalized.otp, '867530');
+});
