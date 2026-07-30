@@ -109,14 +109,16 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
   };
 
   const upsertApplicationInState = (newApplication: ApplicationRecord) => {
+    const normalized = normalizeApplicationRecord(newApplication as Record<string, any>);
+
     setApplications((current) => {
-      const existingIndex = current.findIndex((item) => item.id === newApplication.id);
+      const existingIndex = current.findIndex((item) => item.id === normalized.id);
       if (existingIndex >= 0) {
         const next = [...current];
-        next[existingIndex] = { ...next[existingIndex], ...newApplication };
+        next[existingIndex] = { ...next[existingIndex], ...normalized };
         return sortApplications(next);
       }
-      return sortApplications([newApplication, ...current]);
+      return sortApplications([normalized as ApplicationRecord, ...current]);
     });
   };
 

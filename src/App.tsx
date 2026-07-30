@@ -103,6 +103,10 @@ export default function App() {
   };
 
   const handlePhoneReady = async () => {
+    if (submittedApplication?.id) {
+      return;
+    }
+
     const { monthlyPayment } = calculateMonthlyPayment(formData.loanAmount, formData.loanTermMonths);
     const payload = buildApplicationInsertPayload({
       ...formData,
