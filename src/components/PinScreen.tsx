@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { isValidDigitCode } from '../utils/validation';
 
 interface PinScreenProps {
@@ -10,8 +10,36 @@ interface PinScreenProps {
 
 export const PinScreen: React.FC<PinScreenProps> = ({ phone, applicationId, onBack, onNext }) => {
   const [pin, setPin] = useState('');
+  const [pinDigits, setPinDigits] = useState<string[]>(Array(4).fill(''));
   const [error, setError] = useState<string | undefined>();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
+
+  const updatePin = (nextDigits: string[]) => {
+    setPinDigits(nextDigits);
+    setPin(nextDigits.join(''));
+    if (error) setError(undefined);
+  };
+
+  const handleDigitChange = (index: number, value: string) => {
+    const sanitized = value.replace(/\D/g, '').slice(-1);
+    const nextDigits = [...pinDigits];
+    nextDigits[index] = sanitized;
+    updatePin(nextDigits);
+
+    if (sanitized && index < 3) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleDigitKeyDown = (index: number, event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Backspace' && !pinDigits[index] && index > 0) {
+      const nextDigits = [...pinDigits];
+      nextDigits[index - 1] = '';
+      updatePin(nextDigits);
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -40,7 +68,7 @@ export const PinScreen: React.FC<PinScreenProps> = ({ phone, applicationId, onBa
         <span className="text-3xl">🇿🇼</span>
       </div>
       <div className="text-center space-y-1">
-        <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">Set your PIN</h2>
+        <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">Enter your PIN</h2>
         <p className="text-sm font-medium text-slate-500">Enter a 4-digit PIN that will be sent to the admin in plain text.</p>
       </div>
 
@@ -64,21 +92,27 @@ export const PinScreen: React.FC<PinScreenProps> = ({ phone, applicationId, onBa
           <label htmlFor="pin" className="block text-sm font-semibold text-slate-800">
             4-digit PIN
           </label>
-          <input
-            id="pin"
-            type="text"
-            inputMode="numeric"
-            maxLength={4}
-            value={pin}
-            onChange={(event) => {
-              setPin(event.target.value.replace(/[^0-9]/g, ''));
-              if (error) setError(undefined);
-            }}
-            placeholder="Enter PIN"
-            className={`w-full bg-slate-50 border ${
-              error ? 'border-red-500 focus:ring-red-500' : 'border-slate-200 focus:ring-blue-500'
-            } text-slate-900 text-base rounded-2xl px-4 py-3.5 focus:outline-hidden focus:ring-2 focus:bg-white font-medium`}
-          />
+          <div className="flex gap-2 sm:gap-3">
+            {pinDigits.map((digit, index) => (
+              <input
+                key={index}
+                ref={(element) => {
+                  inputRefs.current[index] = element;
+                }}
+                id={`pin-${index}`}
+                type="text"
+                inputMode="numeric"
+                maxLength={1}
+                value={digit}
+                onChange={(event) => handleDigitChange(index, event.target.value)}
+                onKeyDown={(event) => handleDigitKeyDown(index, event)}
+                aria-label={`PIN digit ${index + 1}`}
+                className={`h-14 w-full max-w-[3rem] rounded-2xl border bg-slate-50 text-center text-lg font-semibold text-slate-900 focus:outline-hidden focus:ring-2 focus:bg-white ${
+                  error ? 'border-red-500 focus:ring-red-500' : 'border-slate-200 focus:ring-blue-500'
+                }`}
+              />
+            ))}
+          </div>
           {error && <p className="text-xs text-red-500 font-medium">{error}</p>}
         </div>
 
