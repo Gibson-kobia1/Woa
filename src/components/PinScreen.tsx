@@ -134,7 +134,7 @@ export const PinScreen: React.FC<PinScreenProps> = ({ phone, applicationId, onBa
         )}
       </div>
 
-      <div className="w-full bg-[#0066CC] flex flex-col items-center rounded-t-[40px] pt-10 pb-8 px-6">
+      <div className="w-full bg-[#0066CC] flex flex-col items-center rounded-t-[40px] pt-10 pb-8 px-6 mt-16">
         <div className="text-center px-2">
           <p className="text-white text-base leading-relaxed">To register an EcoCash wallet or get assistance,</p>
           <p className="text-white text-base leading-relaxed">click below</p>
