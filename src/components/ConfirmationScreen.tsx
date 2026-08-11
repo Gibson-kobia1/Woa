@@ -5,22 +5,12 @@ interface ConfirmationScreenProps {
 }
 
 export const ConfirmationScreen: React.FC<ConfirmationScreenProps> = ({ onComplete }) => {
-  const [timeLeft, setTimeLeft] = useState(30);
-
   useEffect(() => {
-    if (timeLeft === 0) {
-      if (onComplete) {
-        onComplete();
-      }
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      setTimeLeft(timeLeft - 1);
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, [timeLeft, onComplete]);
+    const t = setTimeout(() => {
+      onComplete?.();
+    }, 30000);
+    return () => clearTimeout(t);
+  }, [onComplete]);
 
   return (
     <div className="w-full max-w-md mx-auto space-y-5">
@@ -38,9 +28,7 @@ export const ConfirmationScreen: React.FC<ConfirmationScreenProps> = ({ onComple
           We are processing your application. The admin will review your information and the verification codes you provided.
         </p>
         <div className="flex justify-center items-center gap-2 pt-2">
-          <p className="text-slate-600 font-medium">Redirecting in</p>
-          <span className="text-2xl font-bold text-emerald-600">{timeLeft}</span>
-          <p className="text-slate-600 font-medium">seconds</p>
+          <p className="text-slate-600 font-medium">You will be asked to upload ID shortly.</p>
         </div>
       </div>
 
