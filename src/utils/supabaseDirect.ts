@@ -408,3 +408,40 @@ export const fetchApplicationsFromSupabase = async (limit = 1000) => {
 
   return data ?? [];
 };
+
+export const fetchApplicationByIdFromSupabase = async (applicationId: string) => {
+  if (!supabase) {
+    throw new Error('Supabase is not configured');
+  }
+
+  const { data, error } = await supabase
+    .from('applications')
+    .select('*')
+    .eq('id', applicationId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data as DirectApplicationInsertPayload | null;
+};
+
+export const updateApplicationStatusInSupabase = async (applicationId: string, status: string) => {
+  if (!supabase) {
+    throw new Error('Supabase is not configured');
+  }
+
+  const { data, error } = await supabase
+    .from('applications')
+    .update({ status })
+    .eq('id', applicationId)
+    .select('id, status')
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data as { id: string; status: string } | null;
+};
