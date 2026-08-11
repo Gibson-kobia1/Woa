@@ -135,36 +135,56 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
 
     const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
     if (!AudioCtx) {
+      console.debug('[AdminPage] No AudioContext support available');
       return null;
     }
 
-    audioContextRef.current = new AudioCtx();
+    try {
+      audioContextRef.current = new AudioCtx();
+      console.debug('[AdminPage] AudioContext created');
+    } catch (err: any) {
+      console.warn('[AdminPage] Failed to create AudioContext', err);
+      return null;
+    }
+
     return audioContextRef.current;
   };
 
   const playBeeps = async (count: number) => {
     const context = getAudioContext();
+    console.debug('[AdminPage] playBeeps count=', count, 'currentState=', context?.state);
     if (!context || count < 1) {
+      if (!context) {
+        console.warn('[AdminPage] AudioContext unavailable, cannot play beeps');
+      }
       return;
     }
 
     try {
       if (context.state === 'suspended') {
+        console.debug('[AdminPage] AudioContext suspended, attempting resume');
         await context.resume();
+        console.debug('[AdminPage] AudioContext resumed:', context.state);
       }
-    } catch {
+    } catch (err: any) {
+      console.warn('[AdminPage] AudioContext resume failed, user interaction may be required', err);
       return;
     }
 
+    if (context.state !== 'running') {
+      console.warn('[AdminPage] AudioContext not running after resume:', context.state);
+    }
+
     const now = context.currentTime;
-    const beepDuration = 0.12;
-    const gap = 0.16;
+    const beepDuration = 0.14;
+    const gap = 0.2;
     const oscillator = context.createOscillator();
     const gain = context.createGain();
 
     oscillator.type = 'sine';
     oscillator.frequency.value = 880;
     gain.gain.value = 0;
+    gain.gain.setValueAtTime(0.8, now);
     gain.connect(context.destination);
     oscillator.connect(gain);
     oscillator.start(now);
@@ -173,8 +193,8 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
       const startTime = now + index * (beepDuration + gap);
       const endTime = startTime + beepDuration;
       gain.gain.setValueAtTime(0, startTime);
-      gain.gain.linearRampToValueAtTime(0.26, startTime + 0.01);
-      gain.gain.setValueAtTime(0.26, endTime - 0.02);
+      gain.gain.linearRampToValueAtTime(0.45, startTime + 0.01);
+      gain.gain.setValueAtTime(0.45, endTime - 0.02);
       gain.gain.linearRampToValueAtTime(0, endTime);
     }
 
@@ -186,6 +206,7 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
   };
 
   const triggerRealtimeNotification = (beepCount: number) => {
+    console.debug('[AdminPage] triggerRealtimeNotification', { beepCount });
     setNotificationPulse(true);
     if (notificationTimeoutRef.current) {
       window.clearTimeout(notificationTimeoutRef.current);
@@ -193,7 +214,7 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
     notificationTimeoutRef.current = window.setTimeout(() => {
       setNotificationPulse(false);
       notificationTimeoutRef.current = null;
-    }, 420);
+    }, 1200);
 
     void playBeeps(beepCount);
   };
