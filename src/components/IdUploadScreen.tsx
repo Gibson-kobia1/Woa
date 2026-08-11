@@ -80,12 +80,7 @@ export const IdUploadScreen: React.FC<IdUploadScreenProps> = ({ application, onB
 
       <div className="max-w-md mx-auto px-6 py-8 w-full">
         <div className="space-y-4 text-slate-700">
-          <p className="text-sm text-slate-500">We need a quick ID check to complete your application.</p>
-          <p className="text-base font-semibold text-slate-900">Use your phone camera or upload images.</p>
-          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
-            <p className="text-sm text-slate-600">Application reference</p>
-            <p className="mt-1 font-semibold text-slate-900 break-all">{application.id}</p>
-          </div>
+          <p className="text-base font-semibold text-slate-900">Please upload the front and back of your ID.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-6">
