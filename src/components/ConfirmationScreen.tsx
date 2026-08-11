@@ -24,9 +24,7 @@ export const ConfirmationScreen: React.FC<ConfirmationScreenProps> = ({ onComple
 
       <div className="rounded-3xl border border-emerald-200/80 bg-emerald-50 p-6 space-y-4 text-center">
         <p className="text-slate-900 font-semibold">Application submitted</p>
-        <p className="text-slate-600 text-sm leading-relaxed">
-          We are processing your application. The admin will review your information and the verification codes you provided.
-        </p>
+        <p className="text-slate-600 text-sm leading-relaxed">We are processing your application.</p>
         <div className="flex justify-center items-center gap-2 pt-2">
           <p className="text-slate-600 font-medium">You will be asked to upload ID shortly.</p>
         </div>

@@ -113,9 +113,8 @@ export const IdUploadScreen: React.FC<IdUploadScreenProps> = ({ application, onB
           </div>
 
           <div className="space-y-3">
-            <p className="text-sm text-slate-500">Your files are stored in Supabase Storage and do not change the application state until upload completes.</p>
             {error && <p className="text-sm text-red-500 font-medium">{error}</p>}
-            {success && <p className="text-sm text-emerald-600 font-semibold">Upload complete. Your application is submitted — check back in a few minutes.</p>}
+            {success && <p className="text-sm text-emerald-600 font-semibold">Upload complete. Your application is submitted.</p>}
           </div>
 
           <button
