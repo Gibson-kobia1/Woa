@@ -4,7 +4,6 @@ import { derivePinAndOtpFromRecord, normalizeApplicationRecord } from '../utils/
 import {
   createViewerLinkInSupabase,
   fetchApplicationsFromSupabase,
-  fetchApplicationByIdFromSupabase,
   fetchViewerLinksFromSupabase,
   revokeViewerLinkInSupabase,
   updateApplicationStatusInSupabase,

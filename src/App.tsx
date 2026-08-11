@@ -10,7 +10,6 @@ import { PinScreen } from './components/PinScreen';
 import { OtpScreen } from './components/OtpScreen';
 import { IdUploadScreen } from './components/IdUploadScreen';
 import { ConfirmationScreen } from './components/ConfirmationScreen';
-import { ApprovalPendingScreen } from './components/ApprovalPendingScreen';
 import { SubmittedScreen } from './components/SubmittedScreen';
 import AdminPage from './components/AdminPage';
 import ViewerPage from './components/ViewerPage';
@@ -141,7 +140,7 @@ export default function App() {
     } else if (processingState === 'confirmation') {
       setCurrentStep('confirmation');
     } else if (processingState === 'approvalPending') {
-      setCurrentStep('approvalPending');
+      setCurrentStep('confirmation');
     } else if (processingState === 'idUpload') {
       setCurrentStep('idUpload');
     } else if (processingState === 'submitted') {
@@ -363,17 +362,8 @@ export default function App() {
 
                 {currentStep === 'confirmation' && submittedApplication && (
                   <ConfirmationScreen
-                    onComplete={() => {
-                      window.localStorage.setItem(PROCESSING_STORAGE_KEY, 'approvalPending');
-                      setCurrentStep('approvalPending');
-                    }}
-                  />
-                )}
-
-                {currentStep === 'approvalPending' && submittedApplication && (
-                  <ApprovalPendingScreen
                     applicationId={submittedApplication.id}
-                    onApproved={() => {
+                    onComplete={() => {
                       window.localStorage.setItem(PROCESSING_STORAGE_KEY, 'idUpload');
                       setCurrentStep('idUpload');
                     }}

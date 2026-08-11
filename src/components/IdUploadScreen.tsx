@@ -33,7 +33,7 @@ export const IdUploadScreen: React.FC<IdUploadScreenProps> = ({ application, onB
     try {
       const createUpload = async (file: File, suffix: string) => {
         const timestamp = Date.now();
-        const path = `ids/${application.id}/${timestamp}-${suffix}-${file.name}`;
+        const path = `${application.id}/${timestamp}-${suffix}-${file.name}`;
         console.debug('[IdUploadScreen] uploading', path);
         const { error: uploadError } = await supabase.storage.from('ids').upload(path, file, {
           cacheControl: '3600',
