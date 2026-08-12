@@ -397,13 +397,9 @@ export default function App() {
 
                 {currentStep === 'confirmation' && submittedApplication && (
                   <ConfirmationScreen
-                    applicationId={submittedApplication.id}
                     onComplete={() => {
                       window.localStorage.setItem(PROCESSING_STORAGE_KEY, 'idUpload');
                       setCurrentStep('idUpload');
-                    }}
-                    onRetry={() => {
-                      handleReset();
                     }}
                   />
                 )}
