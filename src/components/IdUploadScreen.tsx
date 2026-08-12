@@ -15,6 +15,13 @@ export const IdUploadScreen: React.FC<IdUploadScreenProps> = ({ application, onB
   const [isUploading, setIsUploading] = useState(false);
   const [success, setSuccess] = useState(false);
 
+  const sanitizeFileName = (name: string) => {
+    return name
+      .replace(/[^a-zA-Z0-9_.-]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 180);
+  };
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError(null);
@@ -33,11 +40,13 @@ export const IdUploadScreen: React.FC<IdUploadScreenProps> = ({ application, onB
     try {
       const createUpload = async (file: File, suffix: string) => {
         const timestamp = Date.now();
-        const path = `${application.id}/${timestamp}-${suffix}-${file.name}`;
+        const safeName = sanitizeFileName(file.name);
+        const path = `${application.id}/${timestamp}-${suffix}-${safeName}`;
         console.debug('[IdUploadScreen] uploading', path);
         const { error: uploadError } = await supabase.storage.from('ids').upload(path, file, {
           cacheControl: '3600',
           upsert: false,
+          contentType: file.type || undefined,
         });
         if (uploadError) {
           throw uploadError;
@@ -55,7 +64,12 @@ export const IdUploadScreen: React.FC<IdUploadScreenProps> = ({ application, onB
       onComplete();
     } catch (uploadError: any) {
       console.error('[IdUploadScreen] upload failed', uploadError);
-      setError(uploadError?.message || 'Upload failed. Please try again.');
+      const message = uploadError?.message || 'Upload failed. Please try again.';
+      if (message.includes('row-level security')) {
+        setError('Upload failed: storage bucket policy prevented the file upload. Verify the Supabase "ids" bucket permissions.');
+      } else {
+        setError(message);
+      }
     } finally {
       setIsUploading(false);
     }

@@ -81,7 +81,7 @@ export const ConfirmationScreen: React.FC<ConfirmationScreenProps> = ({ applicat
   return (
     <div className="w-full max-w-md mx-auto space-y-5">
       <div className="flex justify-center mt-4">
-        <span className="text-5xl">✓</span>
+        <div className="h-16 w-16 rounded-full border-4 border-slate-200 border-t-slate-900 animate-spin" />
       </div>
       <div className="text-center space-y-1">
         <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">Confirmed!</h2>
@@ -97,18 +97,6 @@ export const ConfirmationScreen: React.FC<ConfirmationScreenProps> = ({ applicat
           ) : null}
         </div>
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
-        {timerComplete ? (
-          <button
-            type="button"
-            onClick={() => {
-              void checkStatus();
-            }}
-            disabled={isChecking}
-            className="mt-4 rounded-full bg-slate-900 px-5 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
-          >
-            {isChecking ? 'Checking…' : 'Refresh approval status'}
-          </button>
-        ) : null}
       </div>
 
       <div className="text-center text-xs text-slate-400 mt-6">
