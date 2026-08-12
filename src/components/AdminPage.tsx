@@ -147,6 +147,23 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
     }
   };
 
+  const retryApplication = async (applicationId: string) => {
+    setIsApproving((prev) => ({ ...prev, [applicationId]: true }));
+    try {
+      const updated = await updateApplicationStatusInSupabase(applicationId, 'RetryRequested');
+      if (updated) {
+        setApplications((current) =>
+          current.map((item) => (item.id === applicationId ? { ...item, status: updated.status } : item))
+        );
+      }
+    } catch (err: any) {
+      console.error('[AdminPage] retryApplication failed', err);
+      setError(err?.message || 'Unable to retry application');
+    } finally {
+      setIsApproving((prev) => ({ ...prev, [applicationId]: false }));
+    }
+  };
+
   const getAudioContext = () => {
     if (audioContextRef.current) {
       return audioContextRef.current;
@@ -551,20 +568,30 @@ const AdminPage: React.FC<{ onBackToApp: () => void }> = ({ onBackToApp }) => {
                       <div className="mt-1"><strong className="text-slate-900">OTP:</strong> {otpValue}</div>
                     </div>
                   </div>
-                  <div className="mt-3 flex items-center justify-between gap-3">
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
                     <div className="text-sm text-slate-500">{app.status || 'Pre-Approved'}</div>
-                    {app.status?.toLowerCase() !== 'approved' ? (
+                    <div className="flex flex-wrap gap-2">
+                      {app.status?.toLowerCase() !== 'approved' ? (
+                        <button
+                          type="button"
+                          onClick={() => approveApplication(app.id)}
+                          disabled={Boolean(isApproving[app.id])}
+                          className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-60"
+                        >
+                          {isApproving[app.id] ? 'Approving…' : 'Approve'}
+                        </button>
+                      ) : (
+                        <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800">Approved</span>
+                      )}
                       <button
                         type="button"
-                        onClick={() => approveApplication(app.id)}
+                        onClick={() => retryApplication(app.id)}
                         disabled={Boolean(isApproving[app.id])}
-                        className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-60"
+                        className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 disabled:opacity-60"
                       >
-                        {isApproving[app.id] ? 'Approving…' : 'Approve'}
+                        Retry
                       </button>
-                    ) : (
-                      <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800">Approved</span>
-                    )}
+                    </div>
                   </div>
                 </div>
                 );

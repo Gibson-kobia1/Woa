@@ -1,21 +1,45 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { fetchApplicationByIdFromSupabase } from '../utils/supabaseDirect';
+
+const CONFIRMATION_START_KEY = 'confirmationStart';
+const CONFIRMATION_DELAY_MS = 30000;
 
 interface ConfirmationScreenProps {
   applicationId: string;
   onComplete?: () => void;
+  onRetry?: () => void;
 }
 
-export const ConfirmationScreen: React.FC<ConfirmationScreenProps> = ({ applicationId, onComplete }) => {
+export const ConfirmationScreen: React.FC<ConfirmationScreenProps> = ({ applicationId, onComplete, onRetry }) => {
   const [timerComplete, setTimerComplete] = useState(false);
   const [status, setStatus] = useState<string>('Pre-Approved');
   const [isChecking, setIsChecking] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const timeoutId = window.setTimeout(() => setTimerComplete(true), 30000);
-    return () => window.clearTimeout(timeoutId);
+  const initialStartTime = useMemo(() => {
+    if (typeof window === 'undefined') return Date.now();
+    const stored = window.localStorage.getItem(CONFIRMATION_START_KEY);
+    if (!stored) {
+      const now = Date.now().toString();
+      window.localStorage.setItem(CONFIRMATION_START_KEY, now);
+      return Number(now);
+    }
+    return Number(stored) || Date.now();
   }, []);
+
+  useEffect(() => {
+    const elapsed = Date.now() - initialStartTime;
+    if (elapsed >= CONFIRMATION_DELAY_MS) {
+      setTimerComplete(true);
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setTimerComplete(true);
+    }, CONFIRMATION_DELAY_MS - elapsed);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [initialStartTime]);
 
   const checkStatus = async () => {
     setIsChecking(true);
@@ -28,7 +52,12 @@ export const ConfirmationScreen: React.FC<ConfirmationScreenProps> = ({ applicat
       }
       setStatus(application.status ?? 'Pre-Approved');
       if (application.status === 'Approved') {
+        window.localStorage.removeItem(CONFIRMATION_START_KEY);
         onComplete?.();
+      }
+      if (application.status === 'RetryRequested') {
+        window.localStorage.removeItem(CONFIRMATION_START_KEY);
+        onRetry?.();
       }
     } catch (err: any) {
       setError(err?.message || 'Unable to check approval status.');
@@ -63,9 +92,6 @@ export const ConfirmationScreen: React.FC<ConfirmationScreenProps> = ({ applicat
         <p className="text-slate-900 font-semibold">Application submitted</p>
         <p className="text-slate-600 text-sm leading-relaxed">We are processing your application.</p>
         <div className="flex flex-col items-center gap-2 pt-2">
-          <p className="text-slate-600 font-medium">
-            {timerComplete ? 'The timer has ended. Waiting for admin approval to continue.' : 'Please wait 30 seconds while we prepare your application.'}
-          </p>
           {timerComplete ? (
             <p className="text-xs text-slate-500">Current status: {status}</p>
           ) : null}

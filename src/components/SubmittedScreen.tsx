@@ -12,13 +12,6 @@ export const SubmittedScreen: React.FC = () => {
           <p className="mt-4 text-sm leading-relaxed text-slate-600">
             Your application is submitted. Check back in a few minutes for an update.
           </p>
-          <div className="mt-8 rounded-3xl border border-slate-200 bg-white p-5 text-left text-sm text-slate-700">
-            <p className="font-semibold text-slate-900">What happens next</p>
-            <ul className="mt-3 space-y-3 list-disc pl-5 text-slate-600">
-              <li>Your ID photos were uploaded and stored.</li>
-              <li>Your application is being processed.</li>
-            </ul>
-          </div>
         </div>
       </div>
     </div>

